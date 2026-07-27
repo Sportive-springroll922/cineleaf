@@ -46,7 +46,9 @@ final class EditorState: ObservableObject {
     private var previewTask: Task<Void, Never>?
     private var waveformTasks: [UUID: Task<Void, Never>] = [:]
     @Published private(set) var renderedComposition: RenderedComposition?
-    private var isUITesting: Bool { ProcessInfo.processInfo.arguments.contains("--ui-testing") }
+    private var isUITesting: Bool {
+        ProcessInfo.processInfo.environment["CINELEAF_UI_TESTING"] == "1"
+    }
 
     init() {
         guard !isUITesting else { return }
