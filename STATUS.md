@@ -6,14 +6,15 @@ Cineleaf is under active development toward `0.1.0`. The automated macOS gate pa
 
 ## Verified on macOS CI
 
-GitHub Actions run [30231490263](https://github.com/luucabg/cineleaf/actions/runs/30231490263) passed on 27 July 2026 using Xcode 16.4 build 16F6 and Apple Swift 6.1.2.
+GitHub Actions run [30231779590](https://github.com/luucabg/cineleaf/actions/runs/30231779590) passed on 27 July 2026 using Xcode 16.4 build 16F6 and Apple Swift 6.1.2.
 
 - 21 `CineleafCore` unit and performance-smoke tests passed.
 - 7 application integration and localization tests passed.
 - 2 critical UI flows passed, covering project creation and the Spanish interface.
 - Synthetic video import, thumbnail generation, waveform generation, cancellation, composition, and MP4 export passed.
 - The exported test file was programmatically verified as 1280 × 720 with video, audio, and the expected one-second duration.
-- The app built successfully in Release configuration.
+- The app built successfully in Release configuration as a universal arm64 and x86_64 binary.
+- The release script produced an ad-hoc-signed app, ZIP, DMG, and SHA-256 manifest; CI verified the signature during creation, both checksums, the DMG, and both binary architectures.
 
 CI is automated evidence, not a substitute for a person reviewing playback, interaction quality, screenshots, installation, or a long real-world edit.
 
@@ -25,7 +26,6 @@ The repository was bootstrapped on Windows 10 Pro (64-bit) with Git 2.54.0 and G
 
 `v0.1.0` and binary release assets remain blocked until all of the following are true on macOS:
 
-- The universal release packaging script produces and verifies the app, ZIP, DMG, and checksums.
 - A person completes import, edit, text, audio, save, reopen, preview, and export.
 - The exported file is independently inspected for duration, dimensions, and audio/video tracks.
 - The unsigned app and DMG are opened on a clean test account.
