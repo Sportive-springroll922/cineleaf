@@ -1,24 +1,33 @@
 # Roadmap
 
-## 0.1.0 — usable editor
+## 0.1.0 — fast everyday editor
 
-- Project creation, canvas presets, frame-rate selection, save/open, autosave, recovery, and recent projects
-- Local video, audio, and image import with metadata, thumbnails, and waveform data
-- Multi-track timeline with selection, move, trim, split, delete, duplicate, snapping, mute, lock, enable, zoom, and scrolling
-- Composed AVFoundation preview with play, pause, seek, gaps, transforms, opacity, fades, text, and audio mixing
-- Transform, crop mode, video mute, audio level, and fade controls
-- Text clips with system fonts, styling, positioning, and simple animation
-- H.264/HEVC export to MOV or MP4 with AAC audio, progress, cancellation, and validation
-- English and Spanish localization
-- Unit, integration, localization, performance, and critical-flow UI tests
-- Reproducible unsigned `.app`, `.zip`, `.dmg`, and SHA-256 output
+Implemented in the current source:
 
-The release is gated on a successful macOS build, automated tests, and a manual end-to-end export. It will not be tagged while those gates are unproven.
+- Native English/Spanish editor, exact-time project format, autosave/recovery, relinking, and portable media consolidation.
+- Fast multi-track timeline with normal and ripple edits, insert/overwrite, groups, links, markers, shortcuts, undo/redo, and a 10,000-clip visible-range index.
+- Text, transforms, crop, fades, audio mixing, speed, reverse, freeze frames, keyframes, color controls, effects, reusable looks, and clip-edge transitions.
+- On-device automatic captions, subtitle import/export, voiceover, normalization, reviewed silence removal, and local beat markers.
+- Preview proxies, bounded/clearable caches, local diagnostics, verified AVFoundation export, saved export settings, and universal unsigned packaging.
 
-## 0.2.0 — everyday editing
+Remaining release work is hands-on validation, profiling, installation, and real screenshots on physical Mac hardware. These are evidence gates, not more hidden features.
 
-Ripple/insert/overwrite edits, linked clips, groups, markers, speed changes, basic keyframes, transitions, color controls, subtitles, voiceover, normalization, proxies, media consolidation, and saved export presets.
+## Next — deeper editing and polish
 
-## Later — advanced local tools
+- Handle-based transitions between adjacent clips with a dedicated transition editor.
+- A visual keyframe lane with curve selection and batch keyframe editing.
+- Optional, carefully tested noise reduction and more detailed audio meters.
+- Timeline guides/rulers beyond markers, range selection, and a richer trimming monitor.
+- Section-level composition patching and further measured preview optimizations.
+- Searchable effects, user-created look presets, project templates, and improved media organization.
+- More UI automation, accessibility review, and large-project performance baselines across several Mac models.
 
-Chroma key, masks, Vision-powered tracking and segmentation, on-device captions, silence editing, beat markers, nested timelines, LUTs, scopes, metering, and an optional dependency-reviewed extension backend.
+## Advanced local tools
+
+- Chroma key, masks, and LUT import.
+- Vision-powered motion tracking, supported-device subject segmentation, and background removal.
+- Adjustment layers, nested timelines, and multicam foundations.
+- Color scopes and expanded audio metering.
+- An optional extension architecture and, only after a licensing review, an isolated external media backend.
+
+Advanced tools must remain local, optional, cancellable, and honest about hardware support. Cineleaf will not require a paid API, account, or media upload.

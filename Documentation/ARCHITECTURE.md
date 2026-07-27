@@ -2,12 +2,12 @@
 
 ## Boundaries
 
-`CineleafCore` owns value models, exact timeline arithmetic, validation, editing commands, bounded history, project-format migration, and persistence primitives. It imports Foundation and CoreMedia where exact media interoperation is required, but never SwiftUI.
+`CineleafCore` owns value models, exact timeline arithmetic, validation, interval indexing, editing commands, subtitle/automatic-caption rules, beat-marker selection, bounded history, project-format migration, and persistence primitives. It imports Foundation and CoreMedia where exact media interoperation is required, but never SwiftUI.
 
 The `Cineleaf` application owns macOS presentation and Apple media frameworks. Its subsystems are deliberately narrow:
 
 - `App`: application lifecycle, command routing, shared editor state, recent projects, recovery, and language state.
-- `Services`: security-scoped media access, metadata, thumbnails, waveforms, cache, composition, playback, export, and local diagnostics.
+- `Services`: security-scoped/project-relative media access, metadata, thumbnails, waveforms, streaming audio analysis, captions, proxies, reverse/freeze derivatives, media consolidation, cache, composition, playback, export, and local diagnostics.
 - `UI`: editor layout, media library, timeline, preview, inspectors, export, settings, and accessible native controls.
 
 Protocols isolate media inspection, thumbnails, waveforms, composition, playback, and export so deterministic fakes can exercise UI and state without decoding media.
@@ -16,7 +16,7 @@ Protocols isolate media inspection, thumbnails, waveforms, composition, playback
 
 UI state is `@MainActor`. File and media work lives in actors and asynchronous services. Operations accept or observe cancellation, cache only bounded derived data, and identify results by request/project revision before committing them to UI state. Transient drag state is separate from committed project snapshots.
 
-No source video is read into memory in full. AVFoundation streams samples. Thumbnail and waveform requests are bounded, deduplicated, and cancel stale work. Composition changes are coalesced at edit-commit boundaries rather than pointer-move frequency.
+No source video is read into memory in full. AVFoundation streams samples. Thumbnail and waveform requests are bounded, modification-aware, and cancel stale work. Audio analysis streams PCM buffers; reverse video writes one generated frame at a time. Composition changes are coalesced after committed edits rather than pointer-move frequency.
 
 ## Editing model
 
@@ -26,8 +26,8 @@ Tracks own clips. Overlap is permitted on distinct video tracks but rejected wit
 
 ## Rendering
 
-The composition builder maps enabled timeline clips into `AVMutableComposition`, creates video instructions for transforms/opacity/fades, creates audio ramps, and overlays text through Core Animation. Preview and export consume the same render plan so they cannot quietly diverge. Preview may use lower-resolution derived media; export always uses source media.
+The composition builder maps enabled timeline clips into `AVMutableComposition`, scales speed, resolves bounded reverse derivatives, creates standard transform/opacity/audio ramps, and overlays text through Core Animation. Color, effects, wipes, and blur use a cancellable Core Image compositor. Preview and export consume the same project decisions. Preview may use lower-resolution proxy media; export always uses source media.
 
 ## Diagnostics and privacy
 
-Local signposts cover project open/save, import, thumbnails, waveforms, composition rebuild, seeking, playback startup, autosave, proxy work, and export. Diagnostics remain on-device and contain no source content, account identifiers, or remote endpoint. Cineleaf has no telemetry or network service.
+Local timed diagnostics currently cover project open/save, import, thumbnails, waveforms, composition rebuild, autosave, and export. Diagnostics remain on-device and contain no source content, account identifiers, or remote endpoint. Cineleaf has no telemetry or network service.

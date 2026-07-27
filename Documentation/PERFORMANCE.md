@@ -1,24 +1,66 @@
-# Performance
+# Performance evidence
 
-## Measurement status
+Performance is a release requirement for Cineleaf, not decorative polish. This document separates measured engine results from design targets and work that still requires a physical Mac.
 
-No macOS measurements have been recorded. The bootstrap host is Windows 10 Pro, where Xcode, AVFoundation, Instruments, and the Cineleaf app cannot run. Invented numbers are intentionally omitted.
+## Recorded automated baseline
 
-## Required baseline environment
+- Measurement revision: `7717e2e`
+- GitHub Actions run: [30235037360](https://github.com/luucabg/cineleaf/actions/runs/30235037360)
+- Date: 27 July 2026
+- Environment label: GitHub-hosted `macos-15` runner
+- Xcode: 16.4 build 16F6
+- Swift: Apple Swift 6.1.2
+- SDK: macOS 15.5
+- Configuration: Swift Package XCTest performance build used by `swift test`
 
-Before `0.1.0`, record the Mac model, processor, memory, macOS version, exact Xcode version, build configuration, and thermal/power state. Exercise a generated project of at least one hour with at least 100 mixed clips across 10 tracks.
+The runner log did not record a Mac model, processor name, memory capacity, power state, or thermal state. Those fields are intentionally marked **unknown** rather than guessed. This baseline is useful for regressions on the same CI class, not for comparing consumer Macs.
 
-## Repeatable cases
+| Repeatable case | Test data | Observed wall time |
+| --- | --- | --- |
+| Project validation | 100 clips, 10 tracks, at least one hour | 0.407–0.503 ms; roughly 0.43 ms after warm-up |
+| Project JSON serialization | 100 media assets | 1.410–1.600 ms; roughly 1.43 ms after warm-up |
+| Visible timeline lookup | 10,000 clips; return 15 clips in a 30-second window | 0.039–0.046 ms after first access; first access 0.121 ms |
 
-- Project open and save/reopen
-- Timeline initial load, scroll, zoom, move, trim, and split
-- Thumbnail and waveform cold/warm cache
-- Affected-section composition rebuild
-- Playback startup and rapid seeking
-- Synthetic media export and cancellation
+XCTest displayed rounded averages of 0.000 s, 0.001 s, and 0.000 s respectively. The table uses the unrounded samples printed in the same test log. Timing noise is significant at this scale, especially for the timeline query, so the individual range is more honest than excessive decimal precision.
 
-Capture wall time, main-thread stalls, peak resident memory, file activity, and energy impact. Use XCTest metrics plus Time Profiler, Allocations, Leaks, SwiftUI redraw inspection, File Activity, and Energy Log. Record observed bottlenecks and the exact revision with each result.
+## What is optimized in the implementation
 
-## Design budgets
+- `TimelineIndex` uses a per-track sorted interval index and binary search, so drawing a visible window does not scan an entire long project.
+- The AppKit timeline draws only the dirty visible region plus a small preload margin. Waveforms are downsampled peak arrays, not raw samples or a view per point.
+- Preview compositions and resolved AVFoundation source metadata are reused by project revision. Source caches use bounded least-recently-used eviction.
+- Inspector edits are coalesced before preview rebuild; stale rebuilds, thumbnails, waveforms, proxies, speech recognition, audio analysis, and exports observe cancellation.
+- Preview may use a lightweight proxy while export always resolves the original media.
+- Thumbnail, waveform, metadata, preview derivative, reverse-media, and proxy caches are bounded. Disk usage is visible and clearable in Settings.
+- Audio analysis streams decoded samples in bounded buffers. Reverse video writes one frame at a time. No source movie is loaded completely into memory.
+- Undo history is capped at 50 project snapshots.
+- Project validation fast-paths default transforms, fades, color, effects, and keyframes to avoid unnecessary temporary allocations.
 
-Interactive state changes target roughly 100 ms or less. Timeline drawing virtualizes the visible region with a small preload margin, waveforms use downsampled peaks, thumbnails match display density, caches are bounded, and media/background tasks are cancellable. These are engineering targets, not measured claims.
+## Engineering budgets
+
+- Lightweight interface actions target about 100 ms or less.
+- Timeline drag, trim, scroll, and zoom target the active display refresh rate.
+- Background work must show progress when noticeable and support cancellation where Apple’s framework permits it.
+- Preview quality may decrease through a proxy; final export quality must never inherit that decrease.
+- Memory and disk use must remain bounded for long media.
+
+These are targets. They are not measured end-to-end latency claims.
+
+## Still required on physical hardware
+
+Before `0.1.0`, record the Mac model, processor, memory, macOS version, power state, and thermal state, then exercise at least one hour of mixed media with 100 clips across 10 tracks. Measure:
+
+- initial project open and save/reopen;
+- timeline load, scrolling, zooming, move, trim, and split;
+- thumbnail and waveform cold/warm cache;
+- preview rebuild, playback startup, and rapid seeking;
+- proxy creation and cancellation;
+- synthetic and real-media export, cancellation, and peak resident memory.
+
+Use Main Thread Checker, Time Profiler, Allocations, Leaks, SwiftUI redraw inspection, File Activity, Energy Log, and Core Animation/Metal tools where relevant. The current Windows workstation cannot run Instruments or the macOS UI.
+
+## Known bottlenecks and next optimizations
+
+- Custom Core Image effects and reverse-video preparation are intentionally more expensive than straight cuts; proxies and disk derivatives reduce repeated work, but physical-hardware profiling is still required.
+- A project edit currently invalidates the composed preview by project revision. Source assets and prepared derivatives are reused, but section-level AVComposition patching remains future work.
+- Automatic captions depend on the speed and language support of Apple’s on-device recognizer.
+- Timeline drawing is virtualized, but smoothness at extreme zoom on Retina displays still needs frame-time measurement on real hardware.
