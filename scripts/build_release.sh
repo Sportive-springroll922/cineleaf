@@ -17,6 +17,10 @@ case "$DIST_DIR" in
   "$REPOSITORY_ROOT/dist") ;;
   *) echo "Refusing unexpected distribution directory: $DIST_DIR" >&2; exit 1 ;;
 esac
+case "$DERIVED_DATA" in
+  "$REPOSITORY_ROOT/build/ReleaseDerivedData") ;;
+  *) echo "Refusing unexpected derived-data directory: $DERIVED_DATA" >&2; exit 1 ;;
+esac
 rm -rf "$DIST_DIR" "$DERIVED_DATA"
 mkdir -p "$DIST_DIR" "$DERIVED_DATA"
 cd "$REPOSITORY_ROOT"
