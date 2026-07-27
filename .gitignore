@@ -1,0 +1,56 @@
+# Xcode build products
+build/
+DerivedData/
+*.xcarchive
+*.dSYM
+*.dSYM.zip
+*.app
+*.dmg
+*.ipa
+*.zip
+
+# Xcode user state
+*.xcuserstate
+xcuserdata/
+*.xccheckout
+*.xcscmblueprint
+.swiftpm/xcode/package.xcworkspace/xcuserdata/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Packages/*/.build/
+Package.resolved
+
+# Local tooling
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.tmp
+*.log
+.env
+.env.*
+!.env.example
+
+# Private build brief (never publish)
+/INSTRUCTIONS.md
+/instructions.md
+/instructions.,md
+
+# Signing and credentials
+*.cer
+*.p12
+*.mobileprovision
+*.provisionprofile
+*.key
+*.pem
+
+# Generated media and test output
+TestExports/
+TestMedia/
+PerformanceResults/
+*.cineleaf/
+
+# Distribution output
+dist/
