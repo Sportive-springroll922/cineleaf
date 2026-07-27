@@ -11,7 +11,7 @@ struct CineleafApp: App {
             RootView()
                 .environmentObject(editorState)
                 .environmentObject(languageSettings)
-                .environment(\.locale, languageSettings.selection.locale)
+                .cineleafLocale(languageSettings.selection)
                 .onOpenURL { url in Task { await editorState.open(url) } }
                 .frame(minWidth: 1_020, minHeight: 700)
         }
@@ -23,12 +23,12 @@ struct CineleafApp: App {
             SettingsView()
                 .environmentObject(editorState)
                 .environmentObject(languageSettings)
-                .environment(\.locale, languageSettings.selection.locale)
+                .cineleafLocale(languageSettings.selection)
         }
 
         Window("about.window.title", id: "about") {
             AboutView()
-                .environment(\.locale, languageSettings.selection.locale)
+                .cineleafLocale(languageSettings.selection)
         }
         .windowResizability(.contentSize)
     }

@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 enum AppLanguage: String, CaseIterable, Identifiable {
     case system
@@ -7,9 +8,9 @@ enum AppLanguage: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    var locale: Locale {
+    var overrideLocale: Locale? {
         switch self {
-        case .system: .autoupdatingCurrent
+        case .system: nil
         case .english: Locale(identifier: "en")
         case .spanish: Locale(identifier: "es-ES")
         }
@@ -20,6 +21,17 @@ enum AppLanguage: String, CaseIterable, Identifiable {
         case .system: "settings.language.system"
         case .english: "settings.language.english"
         case .spanish: "settings.language.spanish"
+        }
+    }
+}
+
+extension View {
+    @ViewBuilder
+    func cineleafLocale(_ language: AppLanguage) -> some View {
+        if let locale = language.overrideLocale {
+            environment(\.locale, locale)
+        } else {
+            self
         }
     }
 }

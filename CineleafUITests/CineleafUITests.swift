@@ -18,7 +18,11 @@ final class CineleafUITests: XCTestCase {
 
     func testSpanishWelcomeAndProjectSheet() {
         let app = XCUIApplication()
-        app.launchArguments += ["-AppleLanguages", "(es)"]
+        app.launchArguments += [
+            "-AppleLanguages", "(es)",
+            "-AppleLocale", "es_ES",
+            "-CineleafPreferredLanguage", "spanish"
+        ]
         app.launch()
 
         XCTAssertTrue(app.buttons["Nuevo proyecto"].waitForExistence(timeout: 3))

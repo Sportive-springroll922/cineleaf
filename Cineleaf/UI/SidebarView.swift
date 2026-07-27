@@ -150,7 +150,7 @@ private struct MediaAssetRow: View {
                 HStack(spacing: 5) {
                     Text(asset.kind.localizationKey)
                     if let duration = asset.metadata.duration {
-                        Text("•")
+                        Text(verbatim: "•")
                         Text(DurationText.string(duration))
                     }
                 }
