@@ -4,8 +4,8 @@ Performance is a release requirement for Cineleaf, not decorative polish. This d
 
 ## Recorded automated baseline
 
-- Measurement revision: `7717e2e`
-- GitHub Actions run: [30235037360](https://github.com/luucabg/cineleaf/actions/runs/30235037360)
+- Measurement revision: `6c4e455`
+- GitHub Actions run: [30235867829](https://github.com/luucabg/cineleaf/actions/runs/30235867829)
 - Date: 27 July 2026
 - Environment label: GitHub-hosted `macos-15` runner
 - Xcode: 16.4 build 16F6
@@ -17,11 +17,13 @@ The runner log did not record a Mac model, processor name, memory capacity, powe
 
 | Repeatable case | Test data | Observed wall time |
 | --- | --- | --- |
-| Project validation | 100 clips, 10 tracks, at least one hour | 0.407–0.503 ms; roughly 0.43 ms after warm-up |
-| Project JSON serialization | 100 media assets | 1.410–1.600 ms; roughly 1.43 ms after warm-up |
-| Visible timeline lookup | 10,000 clips; return 15 clips in a 30-second window | 0.039–0.046 ms after first access; first access 0.121 ms |
+| Project validation | 100 clips, 10 tracks, at least one hour | 0.390–0.427 ms after warm-up; first sample 0.611 ms |
+| Project JSON serialization | 100 media assets | 1.405–1.600 ms after warm-up; first sample 4.223 ms |
+| Project JSON encode + decode | 100 clips, 10 tracks, at least one hour | 11.799–18.556 ms |
+| Move + trim + split sequence | 100 clips, 10 tracks, at least one hour; each edit fully validates | 1.645–1.699 ms after warm-up; first sample 1.791 ms |
+| Visible timeline lookup | 10,000 clips; return 15 clips in a 30-second window | 0.039–0.059 ms in settled samples; first sample 0.286 ms |
 
-XCTest displayed rounded averages of 0.000 s, 0.001 s, and 0.000 s respectively. The table uses the unrounded samples printed in the same test log. Timing noise is significant at this scale, especially for the timeline query, so the individual range is more honest than excessive decimal precision.
+The table uses the unrounded samples printed in the XCTest log. Timing noise is significant at this scale, especially for the timeline query, so the individual range is more honest than excessive decimal precision. The encode/decode case measures the versioned JSON codec in memory; it does not include physical disk latency.
 
 ## What is optimized in the implementation
 

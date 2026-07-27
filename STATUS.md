@@ -6,16 +6,15 @@ Cineleaf is a feature-complete **pre-release source build** for the planned `0.1
 
 ## Verified automatically on macOS
 
-GitHub Actions run [30235389597](https://github.com/luucabg/cineleaf/actions/runs/30235389597) passed on 27 July 2026 with Xcode 16.4 build 16F6 and Apple Swift 6.1.2.
+GitHub Actions run [30235867829](https://github.com/luucabg/cineleaf/actions/runs/30235867829) passed on 27 July 2026 with Xcode 16.4 build 16F6 and Apple Swift 6.1.2.
 
-- 36 `CineleafCore` unit/performance tests passed.
-- 14 application integration/localization tests passed.
+- 39 `CineleafCore` unit/performance tests passed.
+- 15 application integration/localization tests passed.
 - 2 critical UI flows passed for project creation and the Spanish interface.
 - Synthetic video/audio tests exercised import, thumbnails, waveforms, streaming audio analysis, silence detection, beat detection, freeze-frame generation, reverse playback, effects, consolidation, composition, cancellation, and MP4 export.
 - Export output was programmatically checked for expected dimensions, duration, video, and audio.
 - Release packaging built an optimized, ad-hoc-signed universal `arm64`/`x86_64` app plus ZIP, DMG, and verified SHA-256 checksums.
-
-The next CI run also covers saved export presets, reusable looks, safe multi-clip property paste, and total cache-size reporting. This file will point to that run once it passes.
+- The same run covered saved export presets, reusable looks, safe multi-clip property paste, total cache-size reporting, and large-project edit/save-reopen performance cases.
 
 ## Working source features
 
@@ -28,7 +27,7 @@ The next CI run also covers saved export presets, reusable looks, safe multi-cli
 
 ## Measured performance
 
-Run [30235037360](https://github.com/luucabg/cineleaf/actions/runs/30235037360) measured the editing engine on the `macos-15` CI class. Warm visible-range queries over 10,000 clips were about 0.04 ms, a one-hour 100-clip/10-track validation about 0.4 ms, and 100-asset serialization about 1.4 ms. See [Documentation/PERFORMANCE.md](Documentation/PERFORMANCE.md) for raw ranges, environment gaps, and limitations.
+Run [30235867829](https://github.com/luucabg/cineleaf/actions/runs/30235867829) measured the editing engine on the `macos-15` CI class. Settled visible-range queries over 10,000 clips reached about 0.04 ms, a one-hour 100-clip/10-track validation about 0.4 ms, a move/trim/split sequence about 1.7 ms, and JSON encode/decode of that large project about 12–19 ms. See [Documentation/PERFORMANCE.md](Documentation/PERFORMANCE.md) for raw ranges, environment gaps, and limitations.
 
 ## Environment limitation
 
@@ -44,6 +43,18 @@ Do not create `v0.1.0` until a person on macOS has:
 - opened the unsigned app and DMG on a clean test account;
 - profiled a large project for hangs, leaks, memory growth, file activity, and energy use;
 - captured real English/Spanish screenshots with non-private licensed or generated media.
+
+The exact next action on a Mac is:
+
+```bash
+git clone https://github.com/luucabg/cineleaf.git
+cd cineleaf
+brew install xcodegen
+xcodegen generate
+open Cineleaf.xcodeproj
+```
+
+Run the workflow above from Xcode, then run `./scripts/build_release.sh` and install the resulting `dist/Cineleaf-0.1.0-macOS.dmg` on a clean test account. Record the Mac model, processor, memory, macOS version, results, and screenshots before creating `v0.1.0`.
 
 ## Reporting rule
 
