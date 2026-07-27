@@ -208,6 +208,27 @@ final class AdvancedEditingTests: XCTestCase {
         XCTAssertEqual(firstTrack[1].sourceStart, RationalTime(value: 11, timescale: 1))
     }
 
+    func testBeatDetectorFindsPeaksAndEnforcesSpacing() throws {
+        var energies = [Float](repeating: 0.02, count: 80)
+        energies[10] = 0.8
+        energies[12] = 0.9
+        energies[40] = 0.75
+
+        let times = BeatMarkerDetector.detect(
+            energies: energies,
+            windowDuration: RationalTime(value: 1, timescale: 20),
+            minimumSpacing: RationalTime(value: 1, timescale: 4)
+        )
+
+        XCTAssertEqual(times, [RationalTime(value: 3, timescale: 5), RationalTime(value: 2, timescale: 1)])
+
+        let fixture = threeClipProject()
+        var editor = try ProjectEditor(project: fixture.project)
+        let ids = try editor.addMarkers(at: times, namePrefix: "Beat")
+        XCTAssertEqual(ids.count, 2)
+        XCTAssertEqual(editor.project.timeline.markers.map(\.name), ["Beat 1", "Beat 2"])
+    }
+
     private func threeClipProject() -> (project: CineleafProject, clips: [TimelineClip]) {
         let asset = TestFixtures.asset(duration: RationalTime(value: 30, timescale: 1))
         var project = CineleafProject(name: "Advanced", assets: [asset])

@@ -116,4 +116,22 @@ enum SyntheticMediaFactory {
         let file = try AVAudioFile(forWriting: url, settings: format.settings)
         try file.write(from: buffer)
     }
+
+    static func makeAudioWithBeats(at url: URL) throws {
+        guard let format = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1),
+              let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 88_200),
+              let samples = buffer.floatChannelData?[0] else {
+            throw SyntheticMediaError.audioBufferFailed
+        }
+        buffer.frameLength = buffer.frameCapacity
+        let beatFrames = [22_050, 44_100, 66_150]
+        for frame in 0..<Int(buffer.frameLength) {
+            let isBeat = beatFrames.contains { frame >= $0 && frame < $0 + 882 }
+            samples[frame] = isBeat
+                ? sin(Float(frame) * 2 * .pi * 120 / 44_100) * 0.9
+                : sin(Float(frame) * 2 * .pi * 220 / 44_100) * 0.01
+        }
+        let file = try AVAudioFile(forWriting: url, settings: format.settings)
+        try file.write(from: buffer)
+    }
 }

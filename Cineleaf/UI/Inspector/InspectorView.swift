@@ -172,6 +172,17 @@ private struct ClipInspector: View {
                         }
                     }
                     .disabled(state.isDetectingSilence)
+                    Button {
+                        Task { await state.detectBeats(for: clip.id) }
+                    } label: {
+                        if state.isDetectingBeats {
+                            ProgressView().controlSize(.small)
+                            Text("beat.detecting")
+                        } else {
+                            Label("beat.detect", systemImage: "metronome")
+                        }
+                    }
+                    .disabled(state.isDetectingBeats)
                     if clip.kind == .video {
                         Button("audio.detach") { state.detachAudio() }
                     }

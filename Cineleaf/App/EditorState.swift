@@ -25,6 +25,7 @@ final class EditorState: ObservableObject {
     @Published private(set) var isNormalizingAudio = false
     @Published private(set) var isRecordingVoiceover = false
     @Published private(set) var isDetectingSilence = false
+    @Published private(set) var isDetectingBeats = false
     @Published var pendingSilenceRemoval: SilenceRemovalProposal?
     @Published private(set) var waveforms: [UUID: [Float]] = [:]
     @Published private(set) var mediaAvailability: [UUID: MediaAvailability] = [:]
@@ -53,6 +54,7 @@ final class EditorState: ObservableObject {
     private let audioAnalysis = AudioAnalysisService()
     private let voiceoverRecorder = VoiceoverRecorder()
     private let silenceDetection = SilenceDetectionService()
+    private let beatDetection = BeatDetectionService()
     private var voiceoverStart = RationalTime.zero
     private var autosaveTask: Task<Void, Never>?
     private var previewTask: Task<Void, Never>?
@@ -528,6 +530,42 @@ final class EditorState: ObservableObject {
         guard let proposal = pendingSilenceRemoval else { return }
         performEdit { try $0.removeTimelineRanges(proposal.ranges) }
         pendingSilenceRemoval = nil
+    }
+
+    func detectBeats(for clipID: UUID) async {
+        guard let project,
+              let clip = project.timeline.tracks.flatMap(\.clips).first(where: { $0.id == clipID }),
+              let assetID = clip.assetID,
+              let asset = project.assets.first(where: { $0.id == assetID }) else { return }
+        isDetectingBeats = true
+        defer { isDetectingBeats = false }
+        do {
+            let url = try await accessManager.resolve(asset.reference)
+            let sourceDuration = RationalTime(
+                seconds: clip.duration.seconds * clip.playbackRate,
+                preferredTimescale: 60_000
+            )
+            let sourceOffsets = try await beatDetection.detect(
+                url: url,
+                sourceStart: clip.sourceStart,
+                sourceDuration: sourceDuration
+            )
+            let timelineTimes = sourceOffsets.compactMap { offset -> RationalTime? in
+                let sourceOffset = clip.isReversed ? sourceDuration - offset : offset
+                let local = RationalTime(
+                    seconds: sourceOffset.seconds / clip.playbackRate,
+                    preferredTimescale: 60_000
+                )
+                guard local >= .zero, local <= clip.duration else { return nil }
+                return clip.timelineStart + local
+            }
+            guard !timelineTimes.isEmpty else { throw BeatDetectionError.noBeats }
+            performEdit {
+                _ = try $0.addMarkers(at: timelineTimes, namePrefix: String(localized: "beat.marker_name"))
+            }
+        } catch {
+            present(error, messageKey: "error.beat.detect")
+        }
     }
 
     private func finishVoiceover() async {

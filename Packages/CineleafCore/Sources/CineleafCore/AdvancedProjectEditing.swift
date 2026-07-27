@@ -296,6 +296,20 @@ public extension ProjectEditor {
     }
 
     @discardableResult
+    mutating func addMarkers(at times: [RationalTime], namePrefix: String) throws -> [UUID] {
+        let uniqueTimes = Array(Set(times.filter { $0 >= .zero })).sorted()
+        guard !uniqueTimes.isEmpty else { return [] }
+        var draft = project
+        let markers = uniqueTimes.enumerated().map { index, time in
+            TimelineMarker(time: time, name: "\(namePrefix) \(index + 1)", colorHex: "#EF8A47FF")
+        }
+        draft.timeline.markers.append(contentsOf: markers)
+        draft.timeline.markers.sort { $0.time < $1.time }
+        try commit(draft)
+        return markers.map(\.id)
+    }
+
+    @discardableResult
     mutating func addSubtitles(
         _ cues: [SubtitleCue],
         to trackID: UUID,

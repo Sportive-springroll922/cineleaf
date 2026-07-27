@@ -231,4 +231,20 @@ final class MediaPipelineIntegrationTests: XCTestCase {
         XCTAssertEqual(ranges[0].start.seconds, 0, accuracy: 0.01)
         XCTAssertEqual(ranges[0].duration.seconds, 1, accuracy: 0.12)
     }
+
+    func testBeatDetectionFindsLocalAudioPulses() async throws {
+        let audioURL = temporaryDirectory.appendingPathComponent("beats.caf")
+        try SyntheticMediaFactory.makeAudioWithBeats(at: audioURL)
+
+        let beats = try await BeatDetectionService().detect(
+            url: audioURL,
+            sourceStart: .zero,
+            sourceDuration: RationalTime(value: 2, timescale: 1)
+        )
+
+        XCTAssertEqual(beats.count, 3)
+        XCTAssertEqual(beats[0].seconds, 0.5, accuracy: 0.08)
+        XCTAssertEqual(beats[1].seconds, 1.0, accuracy: 0.08)
+        XCTAssertEqual(beats[2].seconds, 1.5, accuracy: 0.08)
+    }
 }
