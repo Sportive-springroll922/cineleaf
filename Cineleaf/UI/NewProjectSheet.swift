@@ -12,6 +12,7 @@ struct NewProjectSheet: View {
         VStack(alignment: .leading, spacing: 20) {
             Text("project.new")
                 .font(.title2.weight(.semibold))
+                .accessibilityIdentifier("newProject.title")
             Form {
                 TextField("project.name", text: $name)
                     .accessibilityIdentifier("newProject.name")

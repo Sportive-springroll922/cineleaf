@@ -27,6 +27,8 @@ final class CineleafUITests: XCTestCase {
 
         XCTAssertTrue(app.buttons["Nuevo proyecto"].waitForExistence(timeout: 3))
         app.buttons["Nuevo proyecto"].click()
-        XCTAssertTrue(app.staticTexts["Nuevo proyecto"].waitForExistence(timeout: 3))
+        let title = app.staticTexts["newProject.title"]
+        XCTAssertTrue(title.waitForExistence(timeout: 3))
+        XCTAssertEqual(title.label, "Nuevo proyecto")
     }
 }
