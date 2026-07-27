@@ -10,4 +10,11 @@
 *.sh text eol=lf
 *.py text eol=lf
 *.svg text eol=lf
+*.pbxproj text eol=lf
+*.xcworkspacedata text eol=lf
+*.xcscheme text eol=lf
 *.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.icns binary

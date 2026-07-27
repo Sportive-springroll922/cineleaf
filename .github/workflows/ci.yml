@@ -19,7 +19,7 @@ jobs:
     timeout-minutes: 45
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Select Xcode 16.4
         run: sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
       - name: Record toolchain
@@ -42,19 +42,16 @@ jobs:
             -derivedDataPath DerivedData \
             CODE_SIGNING_ALLOWED=NO \
             test | tee xcodebuild.log
-      - name: Build Release
+      - name: Verify universal release packaging
         run: |
-          xcodebuild \
-            -project Cineleaf.xcodeproj \
-            -scheme Cineleaf \
-            -configuration Release \
-            -destination 'platform=macOS' \
-            -derivedDataPath DerivedData-Release \
-            CODE_SIGNING_ALLOWED=NO \
-            build
+          ./scripts/build_release.sh
+          shasum -a 256 --check dist/SHA256SUMS.txt
+          hdiutil verify dist/Cineleaf-0.1.0-macOS.dmg
+          ARCHITECTURES="$(lipo -archs dist/Cineleaf.app/Contents/MacOS/Cineleaf)"
+          [[ "$ARCHITECTURES" == *arm64* && "$ARCHITECTURES" == *x86_64* ]]
       - name: Upload logs and generated project on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: macos-ci-diagnostics
           path: |

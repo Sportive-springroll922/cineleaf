@@ -21,7 +21,7 @@ Cineleaf is a video editor made especially for Mac. The goal is simple: let anyo
 
 Everything happens on your Mac. Cineleaf does not upload your videos, collect analytics, show advertisements, add a watermark, or ask for a subscription.
 
-> **Development status:** Cineleaf is pre-release software. The editing engine and macOS interface are implemented in source, but there is no tested public download yet. Version `0.1.0` will only be released after the full edit-and-export workflow passes macOS tests and a real manual review. See [STATUS.md](STATUS.md) for the evidence-based status.
+> **Development status:** Cineleaf is pre-release software. Its macOS build and 30 automated tests pass, including a real synthetic video export and English/Spanish interface flows. There is no public download yet because a person still needs to complete the full edit-and-export review on a real Mac. See [STATUS.md](STATUS.md) for the evidence-based status.
 
 ## Super optimized for a fluid editing feel
 
@@ -76,7 +76,7 @@ Read the complete [privacy statement](PRIVACY.md).
 - Xcode 16.4 (Apple Swift 6.1.2), using Swift 5 language mode for the app and Swift tools 5.10 for `CineleafCore`.
 - XcodeGen 2.42 or later to regenerate `Cineleaf.xcodeproj` from `project.yml`.
 
-The exact first bootstrap environment was Windows 10 Pro with Git 2.54.0 and GitHub CLI 2.94.0; it had no Swift or Xcode. macOS CI prints its exact Xcode and Swift versions in every run.
+The exact first bootstrap environment was Windows 10 Pro with Git 2.54.0 and GitHub CLI 2.94.0; it had no Swift or Xcode. The verified macOS CI toolchain is Xcode 16.4 build 16F6 with Apple Swift 6.1.2.
 
 ## Build it yourself
 
