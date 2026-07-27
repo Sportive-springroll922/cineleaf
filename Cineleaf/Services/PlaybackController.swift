@@ -15,9 +15,11 @@ final class PlaybackController: ObservableObject {
             forInterval: CMTime(value: 1, timescale: 30),
             queue: .main
         ) { [weak self] time in
-            guard let self else { return }
-            self.currentTime = RationalTime(time)
-            self.isPlaying = self.player.rate != 0
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.currentTime = RationalTime(time)
+                self.isPlaying = self.player.rate != 0
+            }
         }
     }
 

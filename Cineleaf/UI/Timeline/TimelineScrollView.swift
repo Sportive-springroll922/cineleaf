@@ -119,7 +119,7 @@ final class TimelineDrawingView: NSView {
         super.draw(dirtyRect)
         let visible = visibleRect
         NSColor.windowBackgroundColor.setFill()
-        NSRectFill(visible)
+        NSBezierPath(rect: visible).fill()
         drawRuler(in: visible)
         for (index, track) in project.timeline.tracks.enumerated() {
             drawTrack(track, index: index, visible: visible)
@@ -235,7 +235,7 @@ final class TimelineDrawingView: NSView {
 
     private func drawRuler(in visible: CGRect) {
         NSColor.controlBackgroundColor.setFill()
-        NSRectFill(CGRect(x: visible.minX, y: 0, width: visible.width, height: Self.rulerHeight))
+        NSBezierPath(rect: CGRect(x: visible.minX, y: 0, width: visible.width, height: Self.rulerHeight)).fill()
         let minimumSpacing: CGFloat = 72
         let rawStep = minimumSpacing / pixelsPerSecond
         let candidates = [1.0, 2, 5, 10, 15, 30, 60, 120, 300, 600]
@@ -264,7 +264,7 @@ final class TimelineDrawingView: NSView {
         let row = CGRect(x: visible.minX, y: y, width: visible.width, height: Self.trackHeight)
         (index.isMultiple(of: 2) ? NSColor.controlBackgroundColor : NSColor.windowBackgroundColor)
             .withAlphaComponent(0.72).setFill()
-        NSRectFill(row)
+        NSBezierPath(rect: row).fill()
         NSColor.separatorColor.setStroke()
         let separator = NSBezierPath()
         separator.move(to: CGPoint(x: visible.minX, y: row.maxY - 0.5))
@@ -317,8 +317,8 @@ final class TimelineDrawingView: NSView {
             shape.lineWidth = 3
             shape.stroke()
             NSColor.white.withAlphaComponent(0.8).setFill()
-            NSRectFill(CGRect(x: rect.minX + 3, y: rect.minY + 5, width: 3, height: rect.height - 10))
-            NSRectFill(CGRect(x: rect.maxX - 6, y: rect.minY + 5, width: 3, height: rect.height - 10))
+            NSBezierPath(rect: CGRect(x: rect.minX + 3, y: rect.minY + 5, width: 3, height: rect.height - 10)).fill()
+            NSBezierPath(rect: CGRect(x: rect.maxX - 6, y: rect.minY + 5, width: 3, height: rect.height - 10)).fill()
         }
 
         let textRect = rect.insetBy(dx: 8, dy: 5)
@@ -362,7 +362,7 @@ final class TimelineDrawingView: NSView {
 
     private func drawPinnedHeaders(visible: CGRect) {
         NSColor.controlBackgroundColor.setFill()
-        NSRectFill(CGRect(x: visible.minX, y: 0, width: Self.headerWidth, height: visible.height))
+        NSBezierPath(rect: CGRect(x: visible.minX, y: 0, width: Self.headerWidth, height: visible.height)).fill()
         NSColor.separatorColor.setStroke()
         let border = NSBezierPath()
         border.move(to: CGPoint(x: visible.minX + Self.headerWidth - 0.5, y: 0))

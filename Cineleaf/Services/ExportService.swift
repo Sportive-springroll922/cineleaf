@@ -20,6 +20,14 @@ struct ExportResult: Sendable {
     var hasAudio: Bool
 }
 
+private final class ExportSessionBox: @unchecked Sendable {
+    let session: AVAssetExportSession
+
+    init(_ session: AVAssetExportSession) {
+        self.session = session
+    }
+}
+
 actor AVExportService {
     private var currentSession: AVAssetExportSession?
     private let minimumFreeBytes: Int64 = 100 * 1_024 * 1_024
@@ -67,6 +75,7 @@ actor AVExportService {
             session.fileLengthLimit = Int64((rendered.duration.seconds * (bitsPerSecond + 192_000)) / 8)
         }
         currentSession = session
+        let sessionBox = ExportSessionBox(session)
         let activity = ProcessInfo.processInfo.beginActivity(
             options: [.userInitiated, .idleSystemSleepDisabled],
             reason: "Cineleaf export"
@@ -78,7 +87,7 @@ actor AVExportService {
 
         do {
             try await LocalDiagnostics.shared.measure("export") {
-                try await Self.run(session: session, progress: progress)
+                try await Self.run(sessionBox: sessionBox, progress: progress)
             }
             let result = try await validate(url: destination, expected: plan)
             progress(1)
@@ -96,33 +105,35 @@ actor AVExportService {
     }
 
     private static func run(
-        session: AVAssetExportSession,
+        sessionBox: ExportSessionBox,
         progress: @escaping @Sendable (Double) -> Void
     ) async throws {
         let monitor = Task {
             while !Task.isCancelled {
-                progress(Double(session.progress))
+                progress(Double(sessionBox.session.progress))
                 try await Task.sleep(for: .milliseconds(100))
             }
         }
         defer { monitor.cancel() }
         try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { continuation in
-                session.exportAsynchronously {
-                    switch session.status {
+                sessionBox.session.exportAsynchronously {
+                    switch sessionBox.session.status {
                     case .completed:
                         continuation.resume()
                     case .cancelled:
                         continuation.resume(throwing: ExportError.cancelled)
                     case .failed:
-                        continuation.resume(throwing: ExportError.failed(session.error?.localizedDescription ?? "unknown"))
+                        continuation.resume(
+                            throwing: ExportError.failed(sessionBox.session.error?.localizedDescription ?? "unknown")
+                        )
                     default:
                         continuation.resume(throwing: ExportError.failed("unexpected export state"))
                     }
                 }
             }
         } onCancel: {
-            session.cancelExport()
+            sessionBox.session.cancelExport()
         }
     }
 

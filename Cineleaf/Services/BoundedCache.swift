@@ -75,7 +75,7 @@ actor DerivedDataCache {
     }
 
     private func evictIfNeeded() throws {
-        var candidates = try entries().map { url -> (URL, Int64, Date) in
+        let candidates = try entries().map { url -> (URL, Int64, Date) in
             let values = try url.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey])
             return (url, Int64(values.fileSize ?? 0), values.contentModificationDate ?? .distantPast)
         }
