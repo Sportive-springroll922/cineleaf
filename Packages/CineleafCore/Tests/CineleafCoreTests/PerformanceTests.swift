@@ -45,4 +45,55 @@ final class PerformanceTests: XCTestCase {
             }
         }
     }
+
+    func testLargeProjectSaveReopenPerformance() throws {
+        let project = largeTimelineProject()
+        let codec = ProjectCodec()
+
+        measure {
+            do {
+                let data = try codec.encode(project)
+                _ = try codec.decode(data)
+            } catch {
+                XCTFail("Round trip failed: \(error)")
+            }
+        }
+    }
+
+    func testLargeProjectEditSequencePerformance() throws {
+        let project = largeTimelineProject()
+        let clipID = try XCTUnwrap(project.timeline.tracks.first?.clips.first?.id)
+
+        measure {
+            do {
+                var editor = try ProjectEditor(project: project)
+                try editor.moveClip(clipID, to: RationalTime(value: 20, timescale: 1))
+                try editor.trimStart(of: clipID, to: RationalTime(value: 21, timescale: 1))
+                _ = try editor.splitClip(clipID, at: RationalTime(value: 25, timescale: 1))
+            } catch {
+                XCTFail("Edit sequence failed: \(error)")
+            }
+        }
+    }
+
+    private func largeTimelineProject() -> CineleafProject {
+        let asset = TestFixtures.asset(duration: RationalTime(value: 10, timescale: 1))
+        var project = CineleafProject(name: "Large Performance Project", assets: [asset])
+        project.timeline.tracks = (0..<10).map { trackIndex in
+            TimelineTrack(
+                name: trackIndex < 5 ? "V\(trackIndex + 1)" : "A\(trackIndex - 4)",
+                kind: trackIndex < 5 ? .video : .audio,
+                clips: (0..<10).map { clipIndex in
+                    TimelineClip(
+                        name: "Clip \(trackIndex)-\(clipIndex)",
+                        kind: trackIndex < 5 ? .video : .audio,
+                        assetID: asset.id,
+                        timelineStart: RationalTime(value: Int64(clipIndex * 400), timescale: 1),
+                        duration: RationalTime(value: 10, timescale: 1)
+                    )
+                }
+            )
+        }
+        return project
+    }
 }

@@ -211,6 +211,8 @@ final class EditorState: ObservableObject {
         editor = nil
         selectedClipIDs = []
         selectedAssetID = nil
+        copiedClipProperties = nil
+        canPasteClipProperties = false
         waveforms = [:]
         mediaAvailability = [:]
         history.reset()
@@ -940,6 +942,8 @@ final class EditorState: ObservableObject {
             projectURL = url
             selectedClipIDs = []
             selectedAssetID = nil
+            copiedClipProperties = nil
+            canPasteClipProperties = false
             history.reset()
             isDirty = false
         } catch {
