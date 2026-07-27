@@ -46,8 +46,10 @@ final class EditorState: ObservableObject {
     private var previewTask: Task<Void, Never>?
     private var waveformTasks: [UUID: Task<Void, Never>] = [:]
     @Published private(set) var renderedComposition: RenderedComposition?
+    private var isUITesting: Bool { ProcessInfo.processInfo.arguments.contains("--ui-testing") }
 
     init() {
+        guard !isUITesting else { return }
         Task { [weak self] in
             guard let self else { return }
             do {
@@ -490,7 +492,7 @@ final class EditorState: ObservableObject {
     }
 
     private func scheduleAutosave() {
-        guard let project else { return }
+        guard !isUITesting, let project else { return }
         let url = projectURL
         autosaveTask?.cancel()
         autosaveTask = Task { [weak self] in

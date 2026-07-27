@@ -3,7 +3,7 @@ import XCTest
 final class CineleafUITests: XCTestCase {
     func testCreateProjectInEnglish() {
         let app = XCUIApplication()
-        app.launchArguments += ["-AppleLanguages", "(en)"]
+        app.launchArguments += ["--ui-testing", "-AppleLanguages", "(en)"]
         app.launch()
 
         app.buttons["welcome.newProject"].click()
@@ -19,14 +19,17 @@ final class CineleafUITests: XCTestCase {
     func testSpanishWelcomeAndProjectSheet() {
         let app = XCUIApplication()
         app.launchArguments += [
+            "--ui-testing",
             "-AppleLanguages", "(es)",
             "-AppleLocale", "es_ES",
             "-CineleafPreferredLanguage", "spanish"
         ]
         app.launch()
 
-        XCTAssertTrue(app.buttons["Nuevo proyecto"].waitForExistence(timeout: 3))
-        app.buttons["Nuevo proyecto"].click()
+        let newProjectButton = app.buttons["welcome.newProject"]
+        XCTAssertTrue(newProjectButton.waitForExistence(timeout: 3))
+        XCTAssertEqual(newProjectButton.label, "Nuevo proyecto")
+        newProjectButton.click()
         XCTAssertTrue(app.textFields["newProject.name"].waitForExistence(timeout: 3))
     }
 }
