@@ -54,6 +54,7 @@ actor AVCompositionBuilder {
         let composition = AVMutableComposition()
         let assets = Dictionary(uniqueKeysWithValues: project.assets.map { ($0.id, $0) })
         var layerInstructions: [AVMutableVideoCompositionLayerInstruction] = []
+        var renderPlans: [VideoTrackRenderPlan] = []
         var audioParameters: [AVMutableAudioMixInputParameters] = []
         var overlayClips: [(TimelineClip, MediaAsset?)] = []
 
@@ -68,6 +69,7 @@ actor AVCompositionBuilder {
                         preferredTrackID: kCMPersistentTrackID_Invalid
                     ) else { throw CompositionError.cannotCreateCompositionTrack }
                     let layer = AVMutableVideoCompositionLayerInstruction(assetTrack: destination)
+                    var clipPlans: [VideoClipRenderPlan] = []
                     for clip in videoClips where !clip.isVideoMuted {
                         guard let assetID = clip.assetID, let media = assets[assetID] else {
                             throw CompositionError.missingAsset(clip.assetID ?? clip.id)
@@ -91,9 +93,17 @@ actor AVCompositionBuilder {
                         }
                         let naturalSize = try await source.load(.naturalSize)
                         let preferred = try await source.load(.preferredTransform)
+                        clipPlans.append(VideoClipRenderPlan(
+                            trackID: destination.trackID,
+                            clip: clip,
+                            sourceSize: naturalSize,
+                            preferredTransform: preferred,
+                            canvas: project.canvas
+                        ))
                         configure(layer: layer, clip: clip, sourceSize: naturalSize, preferred: preferred, canvas: project.canvas)
                     }
                     layerInstructions.append(layer)
+                    renderPlans.append(VideoTrackRenderPlan(trackID: destination.trackID, clips: clipPlans))
                 }
 
                 overlayClips += enabled.compactMap { clip in
@@ -148,11 +158,17 @@ actor AVCompositionBuilder {
             let mutable = AVMutableVideoComposition()
             mutable.renderSize = CGSize(width: CGFloat(project.canvas.width), height: CGFloat(project.canvas.height))
             mutable.frameDuration = project.frameRate.value.frameDuration.cmTime
-            let instruction = AVMutableVideoCompositionInstruction()
-            instruction.timeRange = CMTimeRange(start: .zero, duration: project.timeline.duration.cmTime)
-            instruction.layerInstructions = Array(layerInstructions.reversed())
-            instruction.backgroundColor = NSColor.black.cgColor
-            mutable.instructions = [instruction]
+            let timeRange = CMTimeRange(start: .zero, duration: project.timeline.duration.cmTime)
+            if requiresCustomCompositor(project) {
+                mutable.customVideoCompositorClass = CineleafVideoCompositor.self
+                mutable.instructions = [CineleafVideoCompositionInstruction(timeRange: timeRange, layerPlans: renderPlans)]
+            } else {
+                let instruction = AVMutableVideoCompositionInstruction()
+                instruction.timeRange = timeRange
+                instruction.layerInstructions = Array(layerInstructions.reversed())
+                instruction.backgroundColor = NSColor.black.cgColor
+                mutable.instructions = [instruction]
+            }
             if !overlayClips.isEmpty {
                 mutable.animationTool = try await animationTool(
                     overlays: overlayClips,
@@ -176,6 +192,16 @@ actor AVCompositionBuilder {
 
     private func sourceDuration(for clip: TimelineClip) -> RationalTime {
         RationalTime(seconds: clip.duration.seconds * clip.playbackRate, preferredTimescale: 60_000)
+    }
+
+    private func requiresCustomCompositor(_ project: CineleafProject) -> Bool {
+        project.timeline.tracks.flatMap(\.clips).contains { clip in
+            clip.colorAdjustments != .neutral
+                || clip.effects.contains(where: { $0.isEnabled && $0.amount > 0 })
+                || [clip.transitionIn, clip.transitionOut].compactMap({ $0 }).contains {
+                    $0.kind == .wipeLeft || $0.kind == .blur
+                }
+        }
     }
 
     private func configure(

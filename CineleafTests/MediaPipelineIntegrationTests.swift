@@ -162,4 +162,42 @@ final class MediaPipelineIntegrationTests: XCTestCase {
         XCTAssertEqual(rendered.duration.seconds, 1, accuracy: 0.001)
         await access.releaseAll()
     }
+
+    func testCoreImageEffectRendersThroughCustomCompositor() async throws {
+        let videoURL = temporaryDirectory.appendingPathComponent("effect.mov")
+        try await SyntheticMediaFactory.makeVideo(at: videoURL)
+        let asset = MediaAsset(
+            displayName: "effect.mov",
+            kind: .video,
+            reference: MediaReference(lastKnownPath: videoURL.path),
+            metadata: MediaMetadata(
+                duration: RationalTime(value: 1, timescale: 1),
+                resolution: Resolution(width: 320, height: 180),
+                frameRate: RationalRate(numerator: 30),
+                fileType: "mov",
+                hasAudio: false,
+                fileSize: 1
+            )
+        )
+        var project = CineleafProject(name: "Effect", assets: [asset])
+        project.timeline.tracks[0].clips = [TimelineClip(
+            name: asset.displayName,
+            kind: .video,
+            assetID: asset.id,
+            timelineStart: .zero,
+            duration: RationalTime(value: 1, timescale: 1),
+            colorAdjustments: ColorAdjustments(exposure: 0.25, saturation: 0.7),
+            effects: [VideoEffect(kind: .sepia, amount: 0.6)]
+        )]
+
+        let access = MediaAccessManager()
+        let rendered = try await AVCompositionBuilder(accessManager: access).build(project: project)
+        let generator = AVAssetImageGenerator(asset: rendered.composition)
+        generator.videoComposition = try XCTUnwrap(rendered.videoComposition)
+        let frame = try await generator.image(at: CMTime(seconds: 0.5, preferredTimescale: 600)).image
+
+        XCTAssertEqual(frame.width, project.canvas.width)
+        XCTAssertEqual(frame.height, project.canvas.height)
+        await access.releaseAll()
+    }
 }
