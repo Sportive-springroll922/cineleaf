@@ -75,7 +75,6 @@ final class EditorState: ObservableObject {
         autosaveTask?.cancel()
         previewTask?.cancel()
         waveformTasks.values.forEach { $0.cancel() }
-        voiceoverRecorder.cancel()
     }
 
     var canUndo: Bool { history.canUndo }
@@ -164,6 +163,7 @@ final class EditorState: ObservableObject {
         voiceoverRecorder.cancel()
         isRecordingVoiceover = false
         renderedComposition = nil
+        await compositionBuilder.clearCaches()
         await accessManager.releaseAll()
         project = nil
         projectURL = nil

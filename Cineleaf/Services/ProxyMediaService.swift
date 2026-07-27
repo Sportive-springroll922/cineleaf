@@ -32,11 +32,8 @@ actor ProxyMediaService {
         }
         let output = try await store.temporaryURL(extension: "mov")
         let asset = AVURLAsset(url: url)
-        let compatible = AVAssetExportSession.exportPresets(compatibleWith: asset)
-        let preset = compatible.contains(AVAssetExportPreset960x540)
-            ? AVAssetExportPreset960x540
-            : AVAssetExportPresetMediumQuality
-        guard let session = AVAssetExportSession(asset: asset, presetName: preset),
+        guard let session = AVAssetExportSession(asset: asset, presetName: AVAssetExportPreset960x540)
+                ?? AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetMediumQuality),
               session.supportedFileTypes.contains(.mov) else { throw ProxyMediaError.unsupported }
         session.outputURL = output
         session.outputFileType = .mov

@@ -36,12 +36,29 @@ final class RenderedComposition: @unchecked Sendable {
 }
 
 actor AVCompositionBuilder {
-    enum Purpose: Sendable, Equatable {
+    enum Purpose: Sendable, Hashable {
         case preview
         case export
     }
     private let accessManager: MediaAccessManager
     private let reverseMedia = ReverseMediaService()
+    private struct VideoSource {
+        let asset: AVURLAsset
+        let track: AVAssetTrack
+        let naturalSize: CGSize
+        let preferredTransform: CGAffineTransform
+        var access: UInt64
+    }
+    private struct AudioSource {
+        let asset: AVURLAsset
+        let track: AVAssetTrack
+        var access: UInt64
+    }
+    private var videoSourceCache: [URL: VideoSource] = [:]
+    private var audioSourceCache: [URL: AudioSource] = [:]
+    private var renderedCache: [Purpose: RenderedComposition] = [:]
+    private var cacheAccess: UInt64 = 0
+    private let sourceCacheLimit = 32
 
     init(accessManager: MediaAccessManager) {
         self.accessManager = accessManager
@@ -50,9 +67,18 @@ actor AVCompositionBuilder {
     func build(project: CineleafProject, purpose: Purpose = .preview) async throws -> RenderedComposition {
         try ProjectValidator.validate(project)
         guard project.timeline.duration > .zero else { throw CompositionError.emptyTimeline }
-        return try await LocalDiagnostics.shared.measure("composition_rebuild") {
+        if let cached = renderedCache[purpose], cached.revision == project.modifiedAt { return cached }
+        let rendered = try await LocalDiagnostics.shared.measure("composition_rebuild") {
             try await self.buildComposition(project: project, purpose: purpose)
         }
+        renderedCache[purpose] = rendered
+        return rendered
+    }
+
+    func clearCaches() {
+        videoSourceCache.removeAll(keepingCapacity: false)
+        audioSourceCache.removeAll(keepingCapacity: false)
+        renderedCache.removeAll(keepingCapacity: false)
     }
 
     private func buildComposition(project: CineleafProject, purpose: Purpose) async throws -> RenderedComposition {
@@ -62,6 +88,7 @@ actor AVCompositionBuilder {
         var renderPlans: [VideoTrackRenderPlan] = []
         var audioParameters: [AVMutableAudioMixInputParameters] = []
         var overlayClips: [(TimelineClip, MediaAsset?)] = []
+        var resolvedURLs: [UUID: URL] = [:]
 
         for track in project.timeline.tracks {
             try Task.checkCancellation()
@@ -79,7 +106,12 @@ actor AVCompositionBuilder {
                         guard let assetID = clip.assetID, let media = assets[assetID] else {
                             throw CompositionError.missingAsset(clip.assetID ?? clip.id)
                         }
-                        let url = try await mediaURL(media, purpose: purpose)
+                        let url: URL
+                        if let resolved = resolvedURLs[media.id] { url = resolved }
+                        else {
+                            url = try await mediaURL(media, purpose: purpose)
+                            resolvedURLs[media.id] = url
+                        }
                         let sourceDuration = sourceDuration(for: clip)
                         let renderURL = clip.isReversed ? try await reverseMedia.video(
                             url: url,
@@ -87,10 +119,8 @@ actor AVCompositionBuilder {
                             sourceDuration: sourceDuration,
                             frameRate: media.metadata.frameRate ?? project.frameRate.value
                         ) : url
-                        let sourceAsset = AVURLAsset(url: renderURL)
-                        guard let source = try await sourceAsset.loadTracks(withMediaType: .video).first else {
-                            throw CompositionError.missingVideoTrack(media.id)
-                        }
+                        let loaded = try await videoSource(url: renderURL, mediaID: media.id)
+                        let source = loaded.track
                         try destination.insertTimeRange(
                             CMTimeRange(start: clip.isReversed ? .zero : clip.sourceStart.cmTime, duration: sourceDuration.cmTime),
                             of: source,
@@ -102,8 +132,8 @@ actor AVCompositionBuilder {
                                 toDuration: clip.duration.cmTime
                             )
                         }
-                        let naturalSize = try await source.load(.naturalSize)
-                        let preferred = try await source.load(.preferredTransform)
+                        let naturalSize = loaded.naturalSize
+                        let preferred = loaded.preferredTransform
                         clipPlans.append(VideoClipRenderPlan(
                             trackID: destination.trackID,
                             clip: clip,
@@ -135,15 +165,19 @@ actor AVCompositionBuilder {
                         throw CompositionError.missingAsset(clip.assetID ?? clip.id)
                     }
                     if clip.kind == .video && !media.metadata.hasAudio { continue }
-                    let url = try await mediaURL(media, purpose: purpose)
+                    let url: URL
+                    if let resolved = resolvedURLs[media.id] { url = resolved }
+                    else {
+                        url = try await mediaURL(media, purpose: purpose)
+                        resolvedURLs[media.id] = url
+                    }
                     let sourceDuration = sourceDuration(for: clip)
                     let renderURL = clip.isReversed ? try await reverseMedia.audio(
                         url: url,
                         sourceStart: clip.sourceStart,
                         sourceDuration: sourceDuration
                     ) : url
-                    let sourceAsset = AVURLAsset(url: renderURL)
-                    guard let source = try await sourceAsset.loadTracks(withMediaType: .audio).first else {
+                    guard let source = try await audioSource(url: renderURL) else {
                         if clip.kind == .video { continue }
                         throw CompositionError.missingAudioTrack(media.id)
                     }
@@ -217,6 +251,55 @@ actor AVCompositionBuilder {
             return url
         }
         return try await accessManager.resolve(media.reference)
+    }
+
+    private func videoSource(url: URL, mediaID: UUID) async throws -> VideoSource {
+        cacheAccess &+= 1
+        if var cached = videoSourceCache[url] {
+            cached.access = cacheAccess
+            videoSourceCache[url] = cached
+            return cached
+        }
+        let asset = AVURLAsset(url: url)
+        guard let track = try await asset.loadTracks(withMediaType: .video).first else {
+            throw CompositionError.missingVideoTrack(mediaID)
+        }
+        let loaded = VideoSource(
+            asset: asset,
+            track: track,
+            naturalSize: try await track.load(.naturalSize),
+            preferredTransform: try await track.load(.preferredTransform),
+            access: cacheAccess
+        )
+        videoSourceCache[url] = loaded
+        evictSourceCacheIfNeeded()
+        return loaded
+    }
+
+    private func audioSource(url: URL) async throws -> AVAssetTrack? {
+        cacheAccess &+= 1
+        if var cached = audioSourceCache[url] {
+            cached.access = cacheAccess
+            audioSourceCache[url] = cached
+            return cached.track
+        }
+        let asset = AVURLAsset(url: url)
+        guard let track = try await asset.loadTracks(withMediaType: .audio).first else { return nil }
+        audioSourceCache[url] = AudioSource(asset: asset, track: track, access: cacheAccess)
+        evictSourceCacheIfNeeded()
+        return track
+    }
+
+    private func evictSourceCacheIfNeeded() {
+        while videoSourceCache.count + audioSourceCache.count > sourceCacheLimit {
+            let oldestVideo = videoSourceCache.min { $0.value.access < $1.value.access }
+            let oldestAudio = audioSourceCache.min { $0.value.access < $1.value.access }
+            if let video = oldestVideo, oldestAudio == nil || video.value.access <= oldestAudio!.value.access {
+                videoSourceCache.removeValue(forKey: video.key)
+            } else if let audio = oldestAudio {
+                audioSourceCache.removeValue(forKey: audio.key)
+            }
+        }
     }
 
     private func requiresCustomCompositor(_ project: CineleafProject) -> Bool {
