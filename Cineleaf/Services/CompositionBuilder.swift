@@ -358,7 +358,7 @@ actor AVCompositionBuilder {
     }
 }
 
-private extension TextAlignment {
+private extension CineleafCore.TextAlignment {
     var caAlignment: CATextLayerAlignmentMode {
         switch self {
         case .leading: .left

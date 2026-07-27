@@ -71,7 +71,7 @@ private struct ClipInspector: View {
                         Slider(value: binding(\.opacity), in: 0...1)
                     }
                     Picker("inspector.content_mode", selection: binding(\.transform.contentMode)) {
-                        ForEach(ContentMode.allCases, id: \.self) { mode in
+                        ForEach(CineleafCore.ContentMode.allCases, id: \.self) { mode in
                             Text(mode.localizationKey).tag(mode)
                         }
                     }
@@ -125,7 +125,7 @@ private struct ClipInspector: View {
                         Slider(value: textBinding(\.fontWeight), in: -0.8...0.8)
                     }
                     Picker("text.alignment", selection: textBinding(\.alignment)) {
-                        ForEach(TextAlignment.allCases, id: \.self) { alignment in
+                        ForEach(CineleafCore.TextAlignment.allCases, id: \.self) { alignment in
                             Text(alignment.localizationKey).tag(alignment)
                         }
                     }
@@ -139,7 +139,7 @@ private struct ClipInspector: View {
                         Slider(value: textBinding(\.shadowOpacity), in: 0...1)
                     }
                     Picker("text.animation", selection: textBinding(\.animation)) {
-                        ForEach(TextAnimation.allCases, id: \.self) { animation in
+                        ForEach(CineleafCore.TextAnimation.allCases, id: \.self) { animation in
                             Text(animation.localizationKey).tag(animation)
                         }
                     }
@@ -248,7 +248,7 @@ private extension CineleafCore.ContentMode {
     }
 }
 
-private extension TextAlignment {
+private extension CineleafCore.TextAlignment {
     var localizationKey: LocalizedStringKey {
         switch self {
         case .leading: "text.alignment.leading"
@@ -258,7 +258,7 @@ private extension TextAlignment {
     }
 }
 
-private extension TextAnimation {
+private extension CineleafCore.TextAnimation {
     var localizationKey: LocalizedStringKey {
         switch self {
         case .none: "text.animation.none"
