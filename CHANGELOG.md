@@ -6,6 +6,11 @@ All notable changes are recorded here. Cineleaf follows semantic versioning afte
 
 ### Added
 
+- Native Windows 10/11 x64 editor built with .NET 8 and WPF, sharing the Mac `.cineleaf` version-2 project format.
+- Self-contained Windows EXE installer and portable ZIP with bundled LGPLv3 FFmpeg tools and SHA-256 checksums.
+- Windows composed preview/export through FFmpeg, verified hardware encoder probing, offline System.Speech captions, SRT/WebVTT, beat markers and reviewed silence removal.
+- Windows custom virtualized timeline, English/Spanish interface, autosave/recovery, exact-time edit engine, bounded preview cache, 31 unit tests, 2 real-media integration tests and reproducible benchmarks.
+
 - Native macOS editor with English/Spanish interface, original branding, keyboard commands, accessibility labels, and a custom virtualized AppKit timeline.
 - Versioned `.cineleaf` projects, safe v1→v2 migration, autosave/recovery, recents, missing-media relinking, atomic JSON save, and optional portable media consolidation.
 - Multi-track editing, snapping, ripple/insert/overwrite, group/link, markers, property copy/paste, bounded undo/redo, speed, reverse, freeze frames, and keyframes.

@@ -1,5 +1,7 @@
 # Cineleaf project format
 
+The version-2 `.cineleaf` package format is shared by Mac and Windows. Paths may differ between systems, so moving a project also requires moving or relinking its source media unless it is already in a portable location. Windows preserves fields it cannot yet animate visually, including keyframe curves, rather than discarding them.
+
 A `.cineleaf` document is a directory package. The current format version is **2**.
 
 ```text

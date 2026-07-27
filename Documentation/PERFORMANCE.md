@@ -2,6 +2,24 @@
 
 Performance is a release requirement for Cineleaf, not decorative polish. This document separates measured engine results from design targets and work that still requires a physical Mac.
 
+## Recorded Windows baseline
+
+- Date: 27 July 2026
+- Windows 11 Pro 10.0.26200
+- AMD Ryzen 5 5600X (6 cores / 12 threads), 31.9 GB RAM
+- .NET 8.0.23, Release configuration
+- Test project: 100 clips, 10 tracks, exactly one hour; timeline query: 10,000 clips
+
+| Repeatable case | Minimum | Median | Maximum |
+| --- | ---: | ---: | ---: |
+| Project validation | 0.2212 ms | 0.2289 ms | 0.3385 ms |
+| Project JSON serialization | 1.4631 ms | 1.5378 ms | 4.1786 ms |
+| Project JSON encode + decode | 8.5561 ms | 9.4908 ms | 17.7783 ms |
+| Move command with safe clone, validation and undo | 8.5739 ms | 9.9172 ms | 18.9379 ms |
+| Visible-range lookup in 10,000 clips | 0.0075 ms | 0.0079 ms | 0.0088 ms |
+
+These are in-memory engine microbenchmarks captured by `Windows/tools/Cineleaf.Windows.Benchmarks`. They do not measure decode, screen refresh, storage, or final export speed. Reproduce them with `dotnet run --project Windows/tools/Cineleaf.Windows.Benchmarks -c Release`.
+
 ## Recorded automated baseline
 
 - Measurement revision: `6c4e455`
@@ -28,6 +46,7 @@ The table uses the unrounded samples printed in the XCTest log. Timing noise is 
 ## What is optimized in the implementation
 
 - `TimelineIndex` uses a per-track sorted interval index and binary search, so drawing a visible window does not scan an entire long project.
+- The WPF timeline uses the same index and draws visible clips in one custom control rather than creating one heavyweight control per clip.
 - The AppKit timeline draws only the dirty visible region plus a small preload margin. Waveforms are downsampled peak arrays, not raw samples or a view per point.
 - Preview compositions and resolved AVFoundation source metadata are reused by project revision. Source caches use bounded least-recently-used eviction.
 - Inspector edits are coalesced before preview rebuild; stale rebuilds, thumbnails, waveforms, proxies, speech recognition, audio analysis, and exports observe cancellation.
@@ -35,6 +54,7 @@ The table uses the unrounded samples printed in the XCTest log. Timing noise is 
 - Thumbnail, waveform, metadata, preview derivative, reverse-media, and proxy caches are bounded. Disk usage is visible and clearable in Settings.
 - Audio analysis streams decoded samples in bounded buffers. Reverse video writes one frame at a time. No source movie is loaded completely into memory.
 - Undo history is capped at 50 project snapshots.
+- Windows undo history is capped at 100 snapshots; preview work is debounced, cancellable, and stored in a bounded 2 GB disk cache.
 - Project validation fast-paths default transforms, fades, color, effects, and keyframes to avoid unnecessary temporary allocations.
 
 ## Engineering budgets

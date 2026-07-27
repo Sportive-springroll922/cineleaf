@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Cineleaf.Windows.Media</AssemblyName>
+    <RootNamespace>Cineleaf.Media</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Cineleaf.Windows.Core\Cineleaf.Windows.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Speech" Version="10.0.10" />
+  </ItemGroup>
+</Project>

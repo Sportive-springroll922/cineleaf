@@ -5,6 +5,8 @@ DerivedData/
 *.dSYM
 *.dSYM.zip
 *.app
+!Windows/src/Cineleaf.Windows.App/
+!Windows/src/Cineleaf.Windows.App/**
 *.dmg
 *.ipa
 *.zip
@@ -56,3 +58,8 @@ PerformanceResults/
 
 # Distribution output
 dist/
+
+# Windows/.NET build products
+**/bin/
+**/obj/
+Windows/installer/Output/
