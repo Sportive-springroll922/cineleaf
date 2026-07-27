@@ -6,7 +6,7 @@ final class CineleafUITests: XCTestCase {
         app.launchArguments += ["--ui-testing", "-AppleLanguages", "(en)"]
         app.launch()
 
-        XCTAssertEqual(app.wait(for: .runningForeground, timeout: 5), .runningForeground)
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 5))
         let newProjectButton = app.buttons["welcome.newProject"]
         guard newProjectButton.waitForExistence(timeout: 5) else {
             XCTFail("New-project button unavailable.\n\(app.debugDescription)")
@@ -32,7 +32,7 @@ final class CineleafUITests: XCTestCase {
         ]
         app.launch()
 
-        XCTAssertEqual(app.wait(for: .runningForeground, timeout: 5), .runningForeground)
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 5))
         let newProjectButton = app.buttons["welcome.newProject"]
         guard newProjectButton.waitForExistence(timeout: 5) else {
             XCTFail("Spanish new-project button unavailable.\n\(app.debugDescription)")
