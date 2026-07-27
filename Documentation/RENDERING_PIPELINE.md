@@ -1,5 +1,7 @@
 # Rendering pipeline
 
+On Windows, `Cineleaf.Windows.Media` builds an FFmpeg filter graph for the composed video and audio timeline. It handles gaps, transforms, crop/scale/rotation, opacity, text, color/effects, speed/reverse, fades, transitions, delay and mixing. A short real encode chooses a working hardware encoder; a compatible fallback remains available. Render processes are cancellable, progress is parsed, free space is checked first, incomplete outputs are removed, and the result is probed again before success is reported.
+
 Preview and export start from the same validated project snapshot and render decisions.
 
 1. Resolve enabled media through a security-scoped, project-relative, or last-known file reference.

@@ -1,61 +1,32 @@
 # Project status
 
-## Current state
+## Windows — `0.1.0-beta.1`
 
-Cineleaf is a feature-complete **pre-release source build** for the planned `0.1.0` workflow. It is public and usable for development, but it is not tagged or offered as a download until a person finishes the hands-on Mac checks below.
+The native Windows editor and downloadable self-contained installer are prepared for Windows 10/11 x64. The package includes .NET and FFmpeg, installs without administrator privileges, and does not require a separate runtime.
 
-## Verified automatically on macOS
+Verified locally on 27 July 2026:
 
-GitHub Actions run [30235867829](https://github.com/luucabg/cineleaf/actions/runs/30235867829) passed on 27 July 2026 with Xcode 16.4 build 16F6 and Apple Swift 6.1.2.
+- 31 unit/localization/regression tests pass in Release.
+- 2 FFmpeg integration tests create, inspect, render, cancel, and re-inspect real synthetic media.
+- The application builds with 0 warnings and 0 errors.
+- The installer completes silently, the installed application reaches an idle input state and remains running, and the uninstaller exits successfully and removes the test installation.
+- H.264 hardware encoders are probed and only selected after a real test; a compatible fallback remains available.
+- Windows performance measurements and environment details are recorded in `Documentation/PERFORMANCE.md`.
 
-- 39 `CineleafCore` unit/performance tests passed.
-- 15 application integration/localization tests passed.
-- 2 critical UI flows passed for project creation and the Spanish interface.
-- Synthetic video/audio tests exercised import, thumbnails, waveforms, streaming audio analysis, silence detection, beat detection, freeze-frame generation, reverse playback, effects, consolidation, composition, cancellation, and MP4 export.
-- Export output was programmatically checked for expected dimensions, duration, video, and audio.
-- Release packaging built an optimized, ad-hoc-signed universal `arm64`/`x86_64` app plus ZIP, DMG, and verified SHA-256 checksums.
-- The same run covered saved export presets, reusable looks, safe multi-clip property paste, total cache-size reporting, and large-project edit/save-reopen performance cases.
+The Windows workstation became locked during final visual inspection. Accessibility inspection confirmed the complete Spanish editor and a prior launch crash was diagnosed and fixed, but a final pixel-by-pixel screenshot review is still pending. The installer is unsigned, so SmartScreen can warn. No blocking defects are currently known after the automated and smoke checks.
 
-## Working source features
+## Mac — source pre-release
 
-- Project create/open/save, canvas and frame-rate presets, autosave, recovery, recents, missing media, relinking, and portable media consolidation.
-- Asynchronous import, metadata, thumbnails, downsampled waveforms, bounded caches, clear-cache controls, and lightweight preview proxies.
-- Multi-track move/trim/split/delete/duplicate/ripple/insert/overwrite, snapping, mute/lock/enable, groups, links, markers, visible-range indexing, and bounded undo/redo.
-- Composed preview and verified export with transforms, crop, opacity, text/images, audio mix, fades, color, Core Image effects, keyframes, speed, reverse, freeze frames, and clip-edge transitions.
-- On-device-only automatic captions, SRT/WebVTT import/export, voiceover, normalization, silence review/removal, and beat markers.
-- English/Spanish UI, keyboard commands, local diagnostics, original branding, public documentation, and reproducible packaging.
+GitHub Actions run [30236063915](https://github.com/luucabg/cineleaf/actions/runs/30236063915) passed with Xcode 16.4 and Apple Swift 6.1.2:
 
-## Measured performance
+- 39 core tests, 15 application/localization tests and 2 critical UI flows passed.
+- Real synthetic media covered import, derivatives, analysis, effects, composition, cancellation and verified MP4 export.
+- Packaging produced a universal `arm64`/`x86_64` app, ZIP, DMG and checksums.
 
-Run [30235867829](https://github.com/luucabg/cineleaf/actions/runs/30235867829) measured the editing engine on the `macos-15` CI class. Settled visible-range queries over 10,000 clips reached about 0.04 ms, a one-hour 100-clip/10-track validation about 0.4 ms, a move/trim/split sequence about 1.7 ms, and JSON encode/decode of that large project about 12–19 ms. See [Documentation/PERFORMANCE.md](Documentation/PERFORMANCE.md) for raw ranges, environment gaps, and limitations.
+Mac still needs a complete hands-on review on physical hardware before a signed public Mac download: playback feel, microphone permissions, Gatekeeper flow, long-session memory/energy profiling and final screenshots.
 
-## Environment limitation
+## Shared capabilities
 
-The active workstation is Windows 10 Pro and cannot run Xcode, AVFoundation, Instruments, or a macOS GUI. CI proves compilation and automated behavior; it cannot prove subjective visual quality, real-time playback smoothness, microphone experience, Gatekeeper flow, or prolonged use on a physical Mac.
+Both implementations use the version-2 `.cineleaf` project format and exact rational time. They cover multi-track cuts, trims, split, duplicate, ripple editing, markers, transforms, text, fades, effects, transitions, subtitles, audio tools, background work, bounded caches, autosave/recovery and cancellable export. Windows currently preserves all version-2 keyframe data but its FFmpeg renderer does not yet evaluate animated keyframe curves; static values are rendered.
 
-## Release gate still open
-
-Do not create `v0.1.0` until a person on macOS has:
-
-- completed import, edit, text, effects, audio, subtitles, save, reopen, preview, and export;
-- watched and independently inspected the exported file;
-- tested proxy/original quality separation, cancellation, voiceover permission, and on-device caption availability;
-- opened the unsigned app and DMG on a clean test account;
-- profiled a large project for hangs, leaks, memory growth, file activity, and energy use;
-- captured real English/Spanish screenshots with non-private licensed or generated media.
-
-The exact next action on a Mac is:
-
-```bash
-git clone https://github.com/luucabg/cineleaf.git
-cd cineleaf
-brew install xcodegen
-xcodegen generate
-open Cineleaf.xcodeproj
-```
-
-Run the workflow above from Xcode, then run `./scripts/build_release.sh` and install the resulting `dist/Cineleaf-0.1.0-macOS.dmg` on a clean test account. Record the Mac model, processor, memory, macOS version, results, and screenshots before creating `v0.1.0`.
-
-## Reporting rule
-
-Source presence is not treated as a shipped public release. Automated evidence, manual evidence, and untested limitations remain visibly separate.
+Automated evidence does not prove that software can never contain a bug. Report reproducible problems with the bug template and attach non-private diagnostics when possible.

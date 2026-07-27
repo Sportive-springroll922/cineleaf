@@ -3,155 +3,124 @@
 </p>
 
 <p align="center">
-  <strong>Fast, private video editing made for Mac.</strong><br>
-  Free forever. No account, cloud, ads, subscription, watermark, or tracking.
+  <strong>Edición de vídeo rápida, privada y gratuita para Windows y Mac.</strong><br>
+  Sin cuenta, nube, anuncios, suscripción, marca de agua ni seguimiento.
 </p>
 
 <p align="center">
-  <a href="https://github.com/luucabg/cineleaf/actions/workflows/ci.yml"><img alt="Build status" src="https://github.com/luucabg/cineleaf/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-327C60.svg"></a>
-  <img alt="macOS 14 or later" src="https://img.shields.io/badge/macOS-14%2B-142E28.svg">
+  <a href="https://github.com/luucabg/cineleaf/releases/latest"><img alt="Última versión" src="https://img.shields.io/github/v/release/luucabg/cineleaf?include_prereleases&color=327C60"></a>
+  <a href="https://github.com/luucabg/cineleaf/actions/workflows/windows-ci.yml"><img alt="Pruebas de Windows" src="https://github.com/luucabg/cineleaf/actions/workflows/windows-ci.yml/badge.svg"></a>
+  <a href="https://github.com/luucabg/cineleaf/actions/workflows/ci.yml"><img alt="Pruebas de Mac" src="https://github.com/luucabg/cineleaf/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="LICENSE"><img alt="Licencia MIT" src="https://img.shields.io/badge/license-MIT-327C60.svg"></a>
 </p>
 
-![Cineleaf — Free, native video editing for macOS](Branding/Exports/github-social-preview.png)
+## Descargar Cineleaf para Windows
 
-## Cineleaf in plain language
+La forma más sencilla es descargar **[Cineleaf para Windows (instalador EXE)](https://github.com/luucabg/cineleaf/releases/download/v0.1.0-beta.1/Cineleaf-0.1.0-beta.1-Windows-x64-Setup.exe)**.
 
-Cineleaf is a video editor for people who want to make a good video without an account, a subscription, or a complicated professional suite. Drop in your videos, photos, and music; cut and arrange them; add text, effects, transitions, or subtitles; then export a clean video.
+1. Descarga el archivo.
+2. Ábrelo y sigue el instalador. No necesita permisos de administrador.
+3. Abre Cineleaf desde el menú Inicio.
 
-Everything happens on your Mac. Your footage is never sent to a Cineleaf server because there is no Cineleaf server.
+También existe una **[versión portátil ZIP](https://github.com/luucabg/cineleaf/releases/download/v0.1.0-beta.1/Cineleaf-0.1.0-beta.1-Windows-x64-Portable.zip)** que no se instala. Los usuarios avanzados pueden comprobar la descarga con el archivo de **[sumas SHA-256](https://github.com/luucabg/cineleaf/releases/download/v0.1.0-beta.1/Cineleaf-0.1.0-beta.1-Windows-SHA256SUMS.txt)**.
 
-> **Español:** Cineleaf es un editor de vídeo gratuito, privado y nativo para Mac. Permite cortar, ordenar, añadir texto, efectos, audio y subtítulos automáticos sin subir tus archivos, sin cuenta y sin marca de agua. La interfaz está disponible en español e inglés.
+> La versión de Windows es una beta para Windows 10/11 de 64 bits. El instalador no está firmado todavía, por lo que Windows puede mostrar una advertencia de SmartScreen. El código, las pruebas y el proceso de construcción son públicos.
 
-> **Current status:** the source is public pre-release software. Automated macOS builds, tests, real synthetic exports, and universal packaging pass. There is no public download yet because the final hands-on review on a real Mac has not been completed. See [STATUS.md](STATUS.md).
+## Qué es Cineleaf
 
-## Super optimized for speed
+Cineleaf es un editor para crear vídeos sin aprender una herramienta profesional complicada. Arrastra vídeos, fotos y música; corta y ordena; añade texto, efectos, transiciones o subtítulos; y exporta un MP4 listo para compartir.
 
-Cineleaf is built to feel exceptionally quick. It is a real native Mac app, not a website inside a desktop window.
+Todo se procesa en tu ordenador. Cineleaf no sube tus vídeos a ningún servidor.
 
-- The timeline draws only the part you can see, so a long project does not create thousands of heavy screen controls.
-- Difficult 4K footage can use a small, fast preview copy. Final export always goes back to the original file.
-- Thumbnails, waveforms, speech recognition, audio analysis, proxies, saving, and export run in the background.
-- Old preview work is cancelled when a newer edit makes it unnecessary.
-- Repeated media information and preview results are reused instead of read again.
-- Memory and disk caches have hard limits, remove old entries, show their size, and can be cleared safely in Settings.
-- Audio and video are streamed in chunks; Cineleaf does not load an entire movie into memory.
-- Exact frame time prevents the small timing drift common in decimal-second editing.
+La interfaz está disponible en español e inglés. Los proyectos `.cineleaf` usan el mismo formato en Windows y Mac, así que se pueden mover entre ambos sistemas si las rutas de los archivos multimedia siguen siendo accesibles.
 
-Measured on the automated macOS runner, a visible-range lookup in a synthetic 10,000-clip timeline took about **0.04 ms after warm-up**; validation of a one-hour, 100-clip/10-track project took about **0.4 ms**; and serializing a 100-asset project took about **1.4 ms**. These are narrow engine measurements, not a claim that every edit or every Mac has the same speed. Full details are in [Documentation/PERFORMANCE.md](Documentation/PERFORMANCE.md).
+## Súper optimizado para ser rápido
 
-## What works in the current source
+Cineleaf está diseñado para responder al instante incluso en proyectos grandes:
 
-### Everyday editing
+- La línea de tiempo dibuja solo lo que se ve, en vez de crear miles de elementos ocultos.
+- Busca los clips visibles con un índice rápido y no recorre el proyecto entero.
+- Miniaturas, formas de onda, análisis, subtítulos y exportación trabajan en segundo plano.
+- Cancela trabajos de previsualización antiguos cuando haces un cambio nuevo.
+- Reutiliza resultados en una caché limitada a 2 GB, evitando repetir trabajo sin llenar el disco.
+- Procesa audio y vídeo por partes para mantener limitado el uso de memoria.
+- Usa tiempo racional exacto para evitar que los cortes se desplacen por errores decimales.
+- Prueba el hardware disponible y prefiere aceleración NVIDIA, Intel, AMD o Windows cuando funciona; si no, usa una alternativa compatible.
+- El instalador incluye todo lo necesario: no obliga a instalar .NET ni FFmpeg por separado.
 
-- Landscape, vertical, square, and portrait projects at 24, 25, 30, 50, or 60 fps.
-- Local video, audio, and image import with useful details, thumbnails, and audio waveforms.
-- Multiple video and audio tracks with move, trim, split, duplicate, delete, ripple delete, snapping, mute, lock, group, link, insert, overwrite, markers, and undo/redo.
-- A fast native timeline with horizontal scrolling, smooth zoom, visible markers, and familiar keyboard shortcuts.
-- Composed preview with gaps, transforms, crop, fit/fill, opacity, text, image overlays, fades, and audio mixing.
+En un Ryzen 5 5600X, localizar lo visible dentro de 10.000 clips tuvo una mediana de **0,0079 ms**; validar un proyecto de una hora con 100 clips, **0,2289 ms**; y mover un clip con copia segura, historial y validación completa, **9,9172 ms**. Son medidas del motor, no una promesa de que toda exportación tarde lo mismo. Consulta [las medidas y sus límites](Documentation/PERFORMANCE.md).
 
-### Creative tools
+## Funciones disponibles
 
-- Speed from 0.25× to 4×, reverse playback, and real freeze frames.
-- Position, scale, rotation, opacity, and volume keyframes with smooth interpolation.
-- Exposure, contrast, saturation, temperature, tint, highlights, shadows, sharpen, and vignette controls.
-- Blur, sharpen, vignette, monochrome, sepia, and bloom effects, plus reusable quick looks.
-- Entrance and exit transitions: dissolve-style fade, fade through black, slide, wipe, and blur with duration controls.
-- Copy and paste clip properties and effects across selections.
-- Styled text using fonts already installed on the Mac, with stroke, shadow, background, alignment, fade, and slide animation.
+### Edición cómoda
 
-### Smart tools that stay private
+- Proyectos horizontales, verticales, cuadrados y 4:5; 24, 25, 30, 50 o 60 fps.
+- Importación de vídeo, audio e imágenes mediante botón, doble clic o arrastrar y soltar.
+- Varias pistas, mover, recortar, dividir, duplicar, borrar, borrado con cierre de hueco, deshacer y rehacer.
+- Marcadores, detección local de ritmos y revisión/eliminación de silencios.
+- Zoom y desplazamiento fluidos en una línea de tiempo virtualizada.
+- Vista previa compuesta en segundo plano con caché y cancelación.
 
-- **Automatic subtitles on the Mac.** Cineleaf requires Apple’s on-device speech recognition and never falls back to a cloud service.
-- Editable subtitle clips plus SRT and WebVTT import/export.
-- Silence detection with a review window before Cineleaf removes anything; the result can be undone.
-- Local beat detection that places timeline markers for cutting to music.
-- Voiceover recording, safe audio normalization, and detachable video audio.
+### Efectos y creación
 
-### Faster projects and export
+- Posición, escala, rotación, recorte, opacidad, velocidad y reproducción inversa.
+- Exposición, contraste, saturación, temperatura, tinte, luces, sombras, nitidez y viñeta.
+- Desenfoque, nitidez, monocromo, sepia, bloom y viñeta.
+- Fundidos y transiciones de disolución, negro, deslizamiento, barrido y desenfoque.
+- Texto configurable y subtítulos sobre el vídeo.
+- Exportación MP4 H.264 o HEVC desde 720p hasta 4K, con audio AAC, progreso y cancelación.
 
-- Lightweight 540p preview proxies with real progress; originals remain untouched and are always used for export.
-- A command that collects source media inside the `.cineleaf` project so it remains linked when the project is moved.
-- Saved personal export settings.
-- H.264 or HEVC export as MP4 or MOV at 720p, 1080p, 1440p, or 4K, with AAC audio, progress, cancellation, disk-space checks, and output verification.
-- Autosave, interrupted-session recovery, missing-file detection, relinking, recent projects, and portable versioned project files.
-- English and Spanish interface with an in-app language selector.
+### Subtítulos automáticos y privacidad
 
-## Honest current limitations
+En Windows, Cineleaf puede transcribir el audio usando el reconocimiento instalado en el propio sistema. No envía el audio a la nube. También importa y exporta SRT y WebVTT. La disponibilidad y los idiomas dependen de los paquetes de voz instalados en Windows; siempre se puede corregir el texto antes de exportar.
 
-- The app still needs a person to complete and record the full hands-on workflow, visual review, performance profiling, and unsigned installation test on real Mac hardware.
-- Automatic subtitles are disabled when the selected language or Mac does not support Apple’s on-device recognition.
-- Current transitions are clip-edge entrance/exit effects. A handle-based transition editor between two adjacent clips is not yet available.
-- Noise reduction, chroma key, masks, motion tracking, background removal, nested timelines, LUTs, and color scopes remain future work.
-- Intel is compiled and packaged in CI, but has not been exercised on a physical Intel Mac.
-- Real application screenshots are intentionally absent until they can be captured from the running app without fabrication or private data.
+### Ideas innovadoras ya incorporadas
 
-## Mac requirements
+- Un proyecto puede abrirse tanto en Windows como en Mac.
+- La detección de ritmo crea puntos útiles para cortar al compás.
+- La detección de silencio propone cambios para revisar antes de borrar nada.
+- La elección automática de codificador prueba la GPU en vez de asumir que funcionará.
+- Guardado atómico, autoguardado y recuperación reducen el riesgo de perder trabajo.
+- La exportación comprueba espacio libre, limpia archivos incompletos y vuelve a inspeccionar el vídeo final.
 
-- macOS 14 Sonoma or later.
-- Apple Silicon or Intel Mac; the CI release build contains both architectures.
-- To build it: Xcode 16.4 (Apple Swift 6.1.2) and XcodeGen 2.42 or later.
+## Atajos principales
 
-## Build it yourself
+| Acción | Windows | Mac |
+| --- | --- | --- |
+| Guardar | Ctrl+S | ⌘S |
+| Deshacer / rehacer | Ctrl+Z / Ctrl+Y | ⌘Z / ⇧⌘Z |
+| Dividir en el cursor | Ctrl+B | ⌘B |
+| Borrar | Supr | Supr |
+| Duplicar | Ctrl+D | ⌘D |
+| Marcador | M | M |
+| Reproducir / pausar | Espacio | Espacio |
 
-This section is for developers. Regular users should wait for the first manually verified download.
+## Estado de calidad
+
+Windows pasa 31 pruebas unitarias, 2 pruebas de integración con FFmpeg real y una exportación sintética que se vuelve a inspeccionar. También se verifica cancelación, idiomas, construcción Release sin avisos, instalación silenciosa, arranque y desinstalación. Mac mantiene 56 pruebas automatizadas y exportación sintética en GitHub Actions.
+
+No es honesto prometer que ningún programa tiene cero bugs. En esta beta no quedan fallos bloqueantes conocidos después de esas comprobaciones. La revisión visual por píxeles de Windows quedó pendiente porque la sesión de escritorio usada para construirlo estaba bloqueada; el proceso sí arrancó y permaneció estable. En Mac sigue pendiente una prueba manual completa en hardware físico. Consulta [STATUS.md](STATUS.md).
+
+## Para desarrolladores
+
+Windows usa .NET 8, WPF y FFmpeg; Mac usa Swift, SwiftUI/AppKit y AVFoundation. No hay dependencia web ni telemetría.
+
+```powershell
+git clone https://github.com/luucabg/cineleaf.git
+cd cineleaf
+powershell -ExecutionPolicy Bypass -File .\scripts\build_windows_release.ps1
+```
+
+En Mac:
 
 ```bash
 brew install xcodegen
-git clone https://github.com/luucabg/cineleaf.git
-cd cineleaf
 xcodegen generate
-xcodebuild -project Cineleaf.xcodeproj -scheme Cineleaf -destination 'platform=macOS' build CODE_SIGNING_ALLOWED=NO
-```
-
-Run every automated test:
-
-```bash
-swift test --package-path Packages/CineleafCore
-xcodebuild -project Cineleaf.xcodeproj -scheme Cineleaf -destination 'platform=macOS' test CODE_SIGNING_ALLOWED=NO
-```
-
-Create an ad-hoc-signed universal app, ZIP, DMG, and SHA-256 checksums:
-
-```bash
 ./scripts/build_release.sh
 ```
 
-Files appear in `dist/`. They are not Apple-notarized.
+La arquitectura, formato de proyecto y pipeline están documentados en [Documentation](Documentation). Las contribuciones son bienvenidas; consulta [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Installing an unsigned build
+## Licencia
 
-1. Drag `Cineleaf.app` into Applications.
-2. In Finder, Control-click or right-click Cineleaf and choose **Open**.
-3. Choose **Open** again in the warning.
-4. If it remains blocked, open **System Settings → Privacy & Security** and choose **Open Anyway** for Cineleaf.
-
-Never disable Gatekeeper or another Mac security feature.
-
-## Privacy
-
-Cineleaf contains no account system, network service, advertisements, analytics, telemetry, tracking, paid API, or watermark. Project files contain edit decisions and local media references. Clearing a cache never removes a project or its source videos. Read [PRIVACY.md](PRIVACY.md).
-
-## Languages and translations
-
-English is the base language and natural Spanish for Spain is included. Choose **Settings → General → Language** in the app.
-
-Contributors can edit `Cineleaf/Resources/Localizable.xcstrings` in Xcode’s String Catalog editor. Every key needs matching English and Spanish entries. Run the localization tests before opening a pull request.
-
-## Learn more or help
-
-- [Current status](STATUS.md)
-- [Roadmap](ROADMAP.md)
-- [Contributing guide](CONTRIBUTING.md)
-- [Architecture](Documentation/ARCHITECTURE.md)
-- [Project format](Documentation/PROJECT_FORMAT.md)
-- [Rendering pipeline](Documentation/RENDERING_PIPELINE.md)
-- [Performance evidence](Documentation/PERFORMANCE.md)
-- [Security policy](SECURITY.md)
-- [Code of conduct](CODE_OF_CONDUCT.md)
-
-Bug reports and focused contributions are welcome, including wording, translations, accessibility, documentation, testing, and performance work.
-
-## License
-
-Cineleaf uses the [MIT License](LICENSE). It has no third-party runtime dependency outside Apple’s system frameworks. Build-time tools and their licenses are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Cineleaf se publica con licencia [MIT](LICENSE). FFmpeg y las demás piezas redistribuidas conservan sus propias licencias, enumeradas en [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

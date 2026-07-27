@@ -1,5 +1,7 @@
 # Architecture
 
+> Cineleaf now has two native front ends over compatible project concepts: Swift/AppKit/AVFoundation on Mac and C#/WPF/FFmpeg on Windows. The Windows solution lives in `Windows/` and is divided into `Cineleaf.Windows.Core` (models, editing, persistence), `Cineleaf.Windows.Media` (inspection, preview, captions and export), and `Cineleaf.Windows.App` (native UI). Neither version embeds a website.
+
 ## Boundaries
 
 `CineleafCore` owns value models, exact timeline arithmetic, validation, interval indexing, editing commands, subtitle/automatic-caption rules, beat-marker selection, bounded history, project-format migration, and persistence primitives. It imports Foundation and CoreMedia where exact media interoperation is required, but never SwiftUI.

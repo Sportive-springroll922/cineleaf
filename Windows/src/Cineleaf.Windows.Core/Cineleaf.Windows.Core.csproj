@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Cineleaf.Windows.Core</AssemblyName>
+    <RootNamespace>Cineleaf.Core</RootNamespace>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,26 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:system="clr-namespace:System;assembly=mscorlib">
+  <system:String x:Key="AppName">Cineleaf</system:String>
+  <system:String x:Key="New">Nuevo</system:String><system:String x:Key="Open">Abrir</system:String><system:String x:Key="Save">Guardar</system:String>
+  <system:String x:Key="Import">Importar archivos</system:String><system:String x:Key="Undo">Deshacer</system:String><system:String x:Key="Redo">Rehacer</system:String>
+  <system:String x:Key="Split">Dividir</system:String><system:String x:Key="Text">Añadir texto</system:String><system:String x:Key="Captions">Subtítulos automáticos</system:String>
+  <system:String x:Key="SubtitlesImport">Importar SRT/VTT</system:String><system:String x:Key="Export">Exportar</system:String>
+  <system:String x:Key="Media">Multimedia</system:String><system:String x:Key="MediaHint">Importa archivos y haz doble clic para añadirlos.</system:String>
+  <system:String x:Key="Preview">Previsualización</system:String><system:String x:Key="PreparingPreview">Preparando previsualización compuesta…</system:String>
+  <system:String x:Key="PlayPause">Reproducir / pausar</system:String><system:String x:Key="Inspector">Inspector</system:String>
+  <system:String x:Key="NoSelection">Selecciona un clip para editarlo.</system:String><system:String x:Key="Name">Nombre</system:String>
+  <system:String x:Key="Start">Inicio (segundos)</system:String><system:String x:Key="Duration">Duración (segundos)</system:String>
+  <system:String x:Key="Speed">Velocidad</system:String><system:String x:Key="Opacity">Opacidad</system:String><system:String x:Key="Volume">Volumen</system:String>
+  <system:String x:Key="Scale">Escala</system:String><system:String x:Key="Rotation">Rotación</system:String><system:String x:Key="Effect">Efecto</system:String>
+  <system:String x:Key="AddEffect">Añadir efecto</system:String><system:String x:Key="Apply">Aplicar cambios</system:String>
+  <system:String x:Key="Duplicate">Duplicar</system:String><system:String x:Key="RippleDelete">Borrar y cerrar hueco</system:String><system:String x:Key="Marker">Marcador</system:String>
+  <system:String x:Key="FindBeats">Detectar ritmo</system:String><system:String x:Key="RemoveSilence">Revisar silencios</system:String><system:String x:Key="File">Archivo</system:String>
+  <system:String x:Key="Timeline">Línea de tiempo</system:String><system:String x:Key="Language">Idioma</system:String>
+  <system:String x:Key="SystemLanguage">Sistema</system:String><system:String x:Key="English">English</system:String><system:String x:Key="Spanish">Español</system:String>
+  <system:String x:Key="Ready">Listo</system:String><system:String x:Key="Working">Trabajando…</system:String>
+  <system:String x:Key="ExportTitle">Exportar vídeo</system:String><system:String x:Key="Resolution">Resolución</system:String>
+  <system:String x:Key="Codec">Formato</system:String><system:String x:Key="Quality">Calidad</system:String><system:String x:Key="Cancel">Cancelar</system:String>
+  <system:String x:Key="ProjectName">Nombre del proyecto</system:String><system:String x:Key="Create">Crear</system:String>
+  <system:String x:Key="Canvas">Lienzo</system:String><system:String x:Key="FrameRate">Fotogramas por segundo</system:String>
+  <system:String x:Key="ErrorTitle">Cineleaf no ha podido completar la acción</system:String>
+  <system:String x:Key="AboutText">Edición de vídeo gratuita y privada. Todo permanece en este ordenador.</system:String>
+</ResourceDictionary>

@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Cineleaf.Windows.App/Cineleaf.Windows.App.csproj" />
+    <Project Path="src/Cineleaf.Windows.Core/Cineleaf.Windows.Core.csproj" />
+    <Project Path="src/Cineleaf.Windows.Media/Cineleaf.Windows.Media.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Cineleaf.Windows.Core.Tests/Cineleaf.Windows.Core.Tests.csproj" />
+    <Project Path="tests/Cineleaf.Windows.Media.IntegrationTests/Cineleaf.Windows.Media.IntegrationTests.csproj" />
+  </Folder>
+</Solution>
