@@ -11,6 +11,14 @@ enum SyntheticMediaError: Error {
     case audioBufferFailed
 }
 
+private final class AssetWriterBox: @unchecked Sendable {
+    let writer: AVAssetWriter
+
+    init(_ writer: AVAssetWriter) {
+        self.writer = writer
+    }
+}
+
 enum SyntheticMediaFactory {
     static func makeVideo(at url: URL, seconds: Int = 1) async throws {
         let writer = try AVAssetWriter(outputURL: url, fileType: .mov)
@@ -68,10 +76,13 @@ enum SyntheticMediaFactory {
             }
         }
         input.markAsFinished()
+        let writerBox = AssetWriterBox(writer)
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            writer.finishWriting {
-                if writer.status == .completed { continuation.resume() }
-                else { continuation.resume(throwing: writer.error ?? SyntheticMediaError.writerFailed) }
+            writerBox.writer.finishWriting {
+                if writerBox.writer.status == .completed { continuation.resume() }
+                else {
+                    continuation.resume(throwing: writerBox.writer.error ?? SyntheticMediaError.writerFailed)
+                }
             }
         }
     }
