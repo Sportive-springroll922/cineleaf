@@ -15,7 +15,6 @@ public struct ProjectCodec: Sendable {
     public func encode(_ project: CineleafProject) throws -> Data {
         try ProjectValidator.validate(project)
         let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
         return try encoder.encode(project)
     }
@@ -23,7 +22,6 @@ public struct ProjectCodec: Sendable {
     public func decode(_ data: Data) throws -> CineleafProject {
         let migrated = try migrate(data)
         let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
         let project = try decoder.decode(CineleafProject.self, from: migrated)
         try ProjectValidator.validate(project)
         return project
