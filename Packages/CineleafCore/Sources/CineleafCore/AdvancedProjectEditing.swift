@@ -87,6 +87,58 @@ public extension ProjectEditor {
         try commit(draft)
     }
 
+    mutating func removeTimelineRanges(_ ranges: [RationalTimeRange]) throws {
+        let ordered = ranges.filter { $0.start >= .zero && $0.duration > .zero }
+            .sorted { $0.start > $1.start }
+        guard !ordered.isEmpty else { return }
+        var draft = project
+        for range in ordered {
+            for trackIndex in draft.timeline.tracks.indices {
+                let track = draft.timeline.tracks[trackIndex]
+                let affected = track.clips.contains { $0.timelineEnd > range.start }
+                if affected && track.isLocked { throw EditingError.trackLocked(track.id) }
+                var edited: [TimelineClip] = []
+                for clip in track.clips {
+                    if clip.timelineEnd <= range.start {
+                        edited.append(clip)
+                    } else if clip.timelineStart >= range.end {
+                        var shifted = clip
+                        shifted.timelineStart = shifted.timelineStart - range.duration
+                        edited.append(shifted)
+                    } else {
+                        if clip.timelineStart < range.start {
+                            edited.append(Self.segment(
+                                of: clip,
+                                offset: .zero,
+                                duration: range.start - clip.timelineStart,
+                                preserveID: true
+                            ))
+                        }
+                        if clip.timelineEnd > range.end {
+                            let offset = range.end - clip.timelineStart
+                            var right = Self.segment(
+                                of: clip,
+                                offset: offset,
+                                duration: clip.timelineEnd - range.end,
+                                preserveID: false
+                            )
+                            right.timelineStart = range.start
+                            edited.append(right)
+                        }
+                    }
+                }
+                draft.timeline.tracks[trackIndex].clips = edited.sorted { $0.timelineStart < $1.timelineStart }
+            }
+            draft.timeline.markers = draft.timeline.markers.compactMap { marker in
+                if range.start <= marker.time && marker.time < range.end { return nil }
+                var shifted = marker
+                if shifted.time >= range.end { shifted.time = shifted.time - range.duration }
+                return shifted
+            }
+        }
+        try commit(draft)
+    }
+
     mutating func rippleDelete(_ clipIDs: Set<UUID>) throws {
         guard !clipIDs.isEmpty else { return }
         var draft = project
@@ -318,7 +370,7 @@ public extension ProjectEditor {
         )
     }
 
-    private static func segment(
+    static func segment(
         of original: TimelineClip,
         offset: RationalTime,
         duration: RationalTime,

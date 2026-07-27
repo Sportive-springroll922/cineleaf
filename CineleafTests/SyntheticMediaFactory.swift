@@ -102,4 +102,18 @@ enum SyntheticMediaFactory {
         let file = try AVAudioFile(forWriting: url, settings: format.settings)
         try file.write(from: buffer)
     }
+
+    static func makeAudioWithLeadingSilence(at url: URL) throws {
+        guard let format = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1),
+              let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 88_200),
+              let samples = buffer.floatChannelData?[0] else {
+            throw SyntheticMediaError.audioBufferFailed
+        }
+        buffer.frameLength = buffer.frameCapacity
+        for frame in 0..<Int(buffer.frameLength) {
+            samples[frame] = frame < 44_100 ? 0 : sin(Float(frame) * 2 * .pi * 440 / 44_100) * 0.25
+        }
+        let file = try AVAudioFile(forWriting: url, settings: format.settings)
+        try file.write(from: buffer)
+    }
 }

@@ -24,6 +24,8 @@ final class EditorState: ObservableObject {
     @Published private(set) var isGeneratingCaptions = false
     @Published private(set) var isNormalizingAudio = false
     @Published private(set) var isRecordingVoiceover = false
+    @Published private(set) var isDetectingSilence = false
+    @Published var pendingSilenceRemoval: SilenceRemovalProposal?
     @Published private(set) var waveforms: [UUID: [Float]] = [:]
     @Published private(set) var mediaAvailability: [UUID: MediaAvailability] = [:]
     @Published private(set) var proxyProgress: [UUID: Double] = [:]
@@ -50,6 +52,7 @@ final class EditorState: ObservableObject {
     private let transcriptionService = OnDeviceTranscriptionService()
     private let audioAnalysis = AudioAnalysisService()
     private let voiceoverRecorder = VoiceoverRecorder()
+    private let silenceDetection = SilenceDetectionService()
     private var voiceoverStart = RationalTime.zero
     private var autosaveTask: Task<Void, Never>?
     private var previewTask: Task<Void, Never>?
@@ -478,6 +481,53 @@ final class EditorState: ObservableObject {
         } catch {
             present(error, messageKey: "error.voiceover.start")
         }
+    }
+
+    func detectSilence(for clipID: UUID) async {
+        guard let project,
+              let clip = project.timeline.tracks.flatMap(\.clips).first(where: { $0.id == clipID }),
+              let assetID = clip.assetID,
+              let asset = project.assets.first(where: { $0.id == assetID }) else { return }
+        isDetectingSilence = true
+        defer { isDetectingSilence = false }
+        do {
+            let url = try await accessManager.resolve(asset.reference)
+            let sourceDuration = RationalTime(
+                seconds: clip.duration.seconds * clip.playbackRate,
+                preferredTimescale: 60_000
+            )
+            let sourceRanges = try await silenceDetection.detect(
+                url: url,
+                sourceStart: clip.sourceStart,
+                sourceDuration: sourceDuration
+            )
+            let sourceEnd = clip.sourceStart + sourceDuration
+            let timelineRanges = sourceRanges.map { range -> RationalTimeRange in
+                let offset: RationalTime
+                if clip.isReversed { offset = sourceEnd - range.end }
+                else { offset = range.start - clip.sourceStart }
+                return RationalTimeRange(
+                    start: clip.timelineStart + RationalTime(
+                        seconds: offset.seconds / clip.playbackRate,
+                        preferredTimescale: 60_000
+                    ),
+                    duration: RationalTime(
+                        seconds: range.duration.seconds / clip.playbackRate,
+                        preferredTimescale: 60_000
+                    )
+                )
+            }
+            guard !timelineRanges.isEmpty else { throw SilenceDetectionError.noAudio }
+            pendingSilenceRemoval = SilenceRemovalProposal(clipID: clipID, ranges: timelineRanges)
+        } catch {
+            present(error, messageKey: "error.silence.detect")
+        }
+    }
+
+    func applySilenceRemoval() {
+        guard let proposal = pendingSilenceRemoval else { return }
+        performEdit { try $0.removeTimelineRanges(proposal.ranges) }
+        pendingSilenceRemoval = nil
     }
 
     private func finishVoiceover() async {

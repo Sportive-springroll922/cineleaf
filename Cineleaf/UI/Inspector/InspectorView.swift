@@ -161,6 +161,17 @@ private struct ClipInspector: View {
                         }
                     }
                     .disabled(state.isNormalizingAudio)
+                    Button {
+                        Task { await state.detectSilence(for: clip.id) }
+                    } label: {
+                        if state.isDetectingSilence {
+                            ProgressView().controlSize(.small)
+                            Text("silence.detecting")
+                        } else {
+                            Label("silence.detect", systemImage: "waveform.slash")
+                        }
+                    }
+                    .disabled(state.isDetectingSilence)
                     if clip.kind == .video {
                         Button("audio.detach") { state.detachAudio() }
                     }

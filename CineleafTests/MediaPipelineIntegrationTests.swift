@@ -216,4 +216,19 @@ final class MediaPipelineIntegrationTests: XCTestCase {
         XCTAssertLessThanOrEqual(result.linearGain, 2)
         XCTAssertGreaterThan(result.linearGain, 0)
     }
+
+    func testSilenceDetectionFindsLeadingSilenceWithoutLoadingWholeFile() async throws {
+        let audioURL = temporaryDirectory.appendingPathComponent("silence.caf")
+        try SyntheticMediaFactory.makeAudioWithLeadingSilence(at: audioURL)
+
+        let ranges = try await SilenceDetectionService().detect(
+            url: audioURL,
+            sourceStart: .zero,
+            sourceDuration: RationalTime(value: 2, timescale: 1)
+        )
+
+        XCTAssertEqual(ranges.count, 1)
+        XCTAssertEqual(ranges[0].start.seconds, 0, accuracy: 0.01)
+        XCTAssertEqual(ranges[0].duration.seconds, 1, accuracy: 0.12)
+    }
 }

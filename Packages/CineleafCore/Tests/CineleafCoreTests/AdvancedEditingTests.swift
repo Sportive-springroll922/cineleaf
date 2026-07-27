@@ -180,6 +180,34 @@ final class AdvancedEditingTests: XCTestCase {
         XCTAssertEqual(cues[1].start, RationalTime(value: 2, timescale: 1))
     }
 
+    func testRemoveTimelineRangeCutsAllTracksAndClosesGap() throws {
+        let fixture = threeClipProject()
+        var project = fixture.project
+        project.timeline.tracks.append(TimelineTrack(
+            name: "Titles",
+            kind: .video,
+            clips: [TimelineClip(
+                name: "Title",
+                kind: .text,
+                timelineStart: RationalTime(value: 8, timescale: 1),
+                duration: RationalTime(value: 4, timescale: 1),
+                textStyle: TextStyle(text: "Title")
+            )]
+        ))
+        var editor = try ProjectEditor(project: project)
+
+        try editor.removeTimelineRanges([RationalTimeRange(
+            start: RationalTime(value: 9, timescale: 1),
+            duration: RationalTime(value: 2, timescale: 1)
+        )])
+
+        XCTAssertEqual(editor.project.timeline.duration, RationalTime(value: 28, timescale: 1))
+        let firstTrack = editor.project.timeline.tracks[0].clips
+        XCTAssertEqual(firstTrack[0].duration, RationalTime(value: 9, timescale: 1))
+        XCTAssertEqual(firstTrack[1].timelineStart, RationalTime(value: 9, timescale: 1))
+        XCTAssertEqual(firstTrack[1].sourceStart, RationalTime(value: 11, timescale: 1))
+    }
+
     private func threeClipProject() -> (project: CineleafProject, clips: [TimelineClip]) {
         let asset = TestFixtures.asset(duration: RationalTime(value: 30, timescale: 1))
         var project = CineleafProject(name: "Advanced", assets: [asset])

@@ -26,5 +26,8 @@ struct RootView: View {
         .sheet(item: $state.availableRecovery) { recovery in
             RecoverySheet(project: recovery)
         }
+        .sheet(item: $state.pendingSilenceRemoval) { proposal in
+            SilenceRemovalSheet(proposal: proposal)
+        }
     }
 }
