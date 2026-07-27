@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/luucabg/cineleaf/releases/latest"><img alt="Última versión" src="https://img.shields.io/github/v/release/luucabg/cineleaf?include_prereleases&color=327C60"></a>
+  <a href="https://github.com/luucabg/cineleaf/releases/tag/v0.1.0-beta.1"><img alt="Última versión" src="https://img.shields.io/github/v/release/luucabg/cineleaf?include_prereleases&color=327C60"></a>
   <a href="https://github.com/luucabg/cineleaf/actions/workflows/windows-ci.yml"><img alt="Pruebas de Windows" src="https://github.com/luucabg/cineleaf/actions/workflows/windows-ci.yml/badge.svg"></a>
   <a href="https://github.com/luucabg/cineleaf/actions/workflows/ci.yml"><img alt="Pruebas de Mac" src="https://github.com/luucabg/cineleaf/actions/workflows/ci.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="Licencia MIT" src="https://img.shields.io/badge/license-MIT-327C60.svg"></a>
