@@ -247,4 +247,48 @@ final class MediaPipelineIntegrationTests: XCTestCase {
         XCTAssertEqual(beats[1].seconds, 1.0, accuracy: 0.08)
         XCTAssertEqual(beats[2].seconds, 1.5, accuracy: 0.08)
     }
+
+    func testFreezeFrameCreatesARealImage() async throws {
+        let videoURL = temporaryDirectory.appendingPathComponent("freeze.mov")
+        let freezeDirectory = temporaryDirectory.appendingPathComponent("frames", isDirectory: true)
+        try await SyntheticMediaFactory.makeVideo(at: videoURL)
+
+        let imageURL = try await FreezeFrameService(directory: freezeDirectory).create(
+            url: videoURL,
+            sourceTime: CMTime(seconds: 0.5, preferredTimescale: 600)
+        )
+        let inspection = try await AVMediaInspector().inspect(url: imageURL)
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: imageURL.path))
+        XCTAssertEqual(inspection.kind, .image)
+        XCTAssertEqual(inspection.metadata.resolution, Resolution(width: 320, height: 180))
+    }
+
+    func testConsolidatedMediaResolvesRelativeToMovedProject() async throws {
+        let source = temporaryDirectory.appendingPathComponent("source.dat")
+        let originalPackage = temporaryDirectory.appendingPathComponent("Original.cineleaf", isDirectory: true)
+        let movedPackage = temporaryDirectory.appendingPathComponent("Moved.cineleaf", isDirectory: true)
+        try Data("cineleaf-media".utf8).write(to: source)
+        try FileManager.default.createDirectory(at: originalPackage, withIntermediateDirectories: true)
+        let asset = MediaAsset(
+            displayName: "source.dat",
+            kind: .audio,
+            reference: MediaReference(lastKnownPath: source.path),
+            metadata: MediaMetadata(fileType: "dat", hasAudio: true, fileSize: 14)
+        )
+
+        let reference = try await ProjectMediaConsolidator().copy(
+            asset: asset,
+            from: source,
+            into: originalPackage
+        )
+        try FileManager.default.moveItem(at: originalPackage, to: movedPackage)
+        let access = MediaAccessManager()
+        await access.setProjectPackageURL(movedPackage)
+        let resolved = try await access.resolve(reference)
+
+        XCTAssertEqual(try Data(contentsOf: resolved), Data("cineleaf-media".utf8))
+        XCTAssertTrue(resolved.path.hasPrefix(movedPackage.path))
+        await access.releaseAll()
+    }
 }

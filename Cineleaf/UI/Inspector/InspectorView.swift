@@ -96,6 +96,17 @@ private struct ClipInspector: View {
                         }
                     }
                     Toggle("inspector.reverse", isOn: reversedBinding)
+                    Button {
+                        Task { await state.createFreezeFrame(for: clip.id) }
+                    } label: {
+                        if state.isCreatingFreezeFrame {
+                            ProgressView().controlSize(.small)
+                            Text("freeze.creating")
+                        } else {
+                            Label("freeze.create", systemImage: "snowflake")
+                        }
+                    }
+                    .disabled(state.isCreatingFreezeFrame)
                     fadeSlider("inspector.video_fade_in", keyPath: \.fades.videoIn)
                     fadeSlider("inspector.video_fade_out", keyPath: \.fades.videoOut)
                 }

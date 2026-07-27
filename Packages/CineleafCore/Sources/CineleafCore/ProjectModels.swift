@@ -79,11 +79,18 @@ public struct MediaMetadata: Codable, Hashable, Sendable {
 
 public struct MediaReference: Codable, Hashable, Sendable {
     public var lastKnownPath: String
+    public var projectRelativePath: String?
     public var securityScopedBookmark: Data?
     public var sourceModificationDate: Date?
 
-    public init(lastKnownPath: String, securityScopedBookmark: Data? = nil, sourceModificationDate: Date? = nil) {
+    public init(
+        lastKnownPath: String,
+        projectRelativePath: String? = nil,
+        securityScopedBookmark: Data? = nil,
+        sourceModificationDate: Date? = nil
+    ) {
         self.lastKnownPath = lastKnownPath
+        self.projectRelativePath = projectRelativePath
         self.securityScopedBookmark = securityScopedBookmark
         self.sourceModificationDate = sourceModificationDate
     }

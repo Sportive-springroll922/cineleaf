@@ -49,6 +49,11 @@ struct EditorView: View {
                 .disabled(state.project?.timeline.duration == .zero)
             }
             ToolbarItemGroup(placement: .primaryAction) {
+                if let progress = state.consolidationProgress {
+                    ProgressView(value: progress)
+                        .frame(width: 70)
+                        .help("media.consolidating")
+                }
                 Button { state.isProjectSettingsPresented = true } label: {
                     Label("project.settings", systemImage: "slider.horizontal.3")
                 }

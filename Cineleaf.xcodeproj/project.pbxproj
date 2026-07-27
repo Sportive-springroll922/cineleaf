@@ -36,6 +36,8 @@
 		A22222222222222222222222 /* SilenceRemovalSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B22222222222222222222222 /* SilenceRemovalSheet.swift */; };
 		A33333333333333333333333 /* BeatDetectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B33333333333333333333333 /* BeatDetectionService.swift */; };
 		A44444444444444444444444 /* StreamingAudioReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B44444444444444444444444 /* StreamingAudioReader.swift */; };
+		A55555555555555555555555 /* FreezeFrameService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55555555555555555555555 /* FreezeFrameService.swift */; };
+		A66666666666666666666666 /* ProjectMediaConsolidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B66666666666666666666666 /* ProjectMediaConsolidator.swift */; };
 		AA846166F2DF49FAAD86D2C3 /* MediaPipelineIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20157B24935D3C4E7E547AE6 /* MediaPipelineIntegrationTests.swift */; };
 		B4A8CFFAE625E2075D4203B5 /* SyntheticMediaFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B58DF59AF4A1BCAFB4757FE /* SyntheticMediaFactory.swift */; };
 		B5B0B24037DFFFEB4D573341 /* PreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFCABE675ABDCBC43D891BB6 /* PreviewView.swift */; };
@@ -127,6 +129,8 @@
 		B22222222222222222222222 /* SilenceRemovalSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SilenceRemovalSheet.swift; sourceTree = "<group>"; };
 		B33333333333333333333333 /* BeatDetectionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeatDetectionService.swift; sourceTree = "<group>"; };
 		B44444444444444444444444 /* StreamingAudioReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingAudioReader.swift; sourceTree = "<group>"; };
+		B55555555555555555555555 /* FreezeFrameService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FreezeFrameService.swift; sourceTree = "<group>"; };
+		B66666666666666666666666 /* ProjectMediaConsolidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectMediaConsolidator.swift; sourceTree = "<group>"; };
 		EF03BF16F6115D7745C6D87B /* CoreMediaBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreMediaBridge.swift; sourceTree = "<group>"; };
 		F69E9C813E45FF702EB343C5 /* MediaInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaInspector.swift; sourceTree = "<group>"; };
 		FA216CE816DB41593E360499 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
@@ -291,6 +295,7 @@
 				5DD066459CF69C1BD26843F3 /* CompositionBuilder.swift */,
 				EF03BF16F6115D7745C6D87B /* CoreMediaBridge.swift */,
 				DA4571433D30C1612B72D422 /* ExportService.swift */,
+				B55555555555555555555555 /* FreezeFrameService.swift */,
 				3A16CB15B41658C0104E51FA /* LocalDiagnostics.swift */,
 				D51019943A8ECF8F9DE61895 /* MediaAccessManager.swift */,
 				5159F1C66E5282168CC9240A /* MediaDerivativeStore.swift */,
@@ -298,6 +303,7 @@
 				51EB0D756B100B84BE778E8A /* OnDeviceTranscriptionService.swift */,
 				C0B017BB71881CE86A941CAC /* PlaybackController.swift */,
 				C15A1FABEBFA779BA79BB966 /* ProxyMediaService.swift */,
+				B66666666666666666666666 /* ProjectMediaConsolidator.swift */,
 				87FBAA9C41242F614DEDF9D0 /* ReverseMediaService.swift */,
 				B11111111111111111111111 /* SilenceDetectionService.swift */,
 				B44444444444444444444444 /* StreamingAudioReader.swift */,
@@ -467,6 +473,7 @@
 				7286A5445B9CB619268142DC /* EditorView.swift in Sources */,
 				F63FDFB626BFEDDABAFD9484 /* ErrorAndRecoverySheets.swift in Sources */,
 				3EB2905542AA15A597B07749 /* ExportService.swift in Sources */,
+				A55555555555555555555555 /* FreezeFrameService.swift in Sources */,
 				8A8260E8EE5334015FFF05A8 /* ExportSheet.swift in Sources */,
 				3B9EC237F2C60F2C4DFF60E3 /* InspectorView.swift in Sources */,
 				CF573D4F7CA0406F91E6784A /* LocalDiagnostics.swift in Sources */,
@@ -479,6 +486,7 @@
 				B5B0B24037DFFFEB4D573341 /* PreviewView.swift in Sources */,
 				E79C1745357611B319C2BFE4 /* ProjectSettingsSheet.swift in Sources */,
 				624C6F0B186F6D54BF96136A /* ProxyMediaService.swift in Sources */,
+				A66666666666666666666666 /* ProjectMediaConsolidator.swift in Sources */,
 				D20FF521F11C2319E4F19EB9 /* RecentProjectsStore.swift in Sources */,
 				FCC202396A14E5FE967E364E /* ReverseMediaService.swift in Sources */,
 				5BDCDB182BEFD2E7309141D3 /* RootView.swift in Sources */,

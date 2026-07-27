@@ -41,6 +41,22 @@ public struct ProjectEditor: Sendable {
         try commit(draft)
     }
 
+    public mutating func replaceAssets(_ assets: [MediaAsset]) throws {
+        guard !assets.isEmpty else { return }
+        let replacements = Dictionary(uniqueKeysWithValues: assets.map { ($0.id, $0) })
+        var draft = project
+        let existingIDs = Set(draft.assets.map(\.id))
+        guard replacements.keys.allSatisfy(existingIDs.contains) else {
+            throw EditingError.invalidEdit
+        }
+        for index in draft.assets.indices {
+            if let replacement = replacements[draft.assets[index].id] {
+                draft.assets[index] = replacement
+            }
+        }
+        try commit(draft)
+    }
+
     @discardableResult
     public mutating func addTrack(name: String, kind: TrackKind, at index: Int? = nil) throws -> UUID {
         var draft = project

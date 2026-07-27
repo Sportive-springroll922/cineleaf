@@ -9,6 +9,11 @@ enum MediaAccessError: Error {
 
 actor MediaAccessManager {
     private var accessedURLs: [URL: Int] = [:]
+    private var projectPackageURL: URL?
+
+    func setProjectPackageURL(_ url: URL?) {
+        projectPackageURL = url
+    }
 
     func makeReference(for url: URL) throws -> MediaReference {
         guard FileManager.default.fileExists(atPath: url.path) else {
@@ -29,7 +34,11 @@ actor MediaAccessManager {
 
     func resolve(_ reference: MediaReference) throws -> URL {
         let resolved: URL
-        if let bookmark = reference.securityScopedBookmark {
+        if let relativePath = reference.projectRelativePath,
+           let projectPackageURL,
+           FileManager.default.fileExists(atPath: projectPackageURL.appendingPathComponent(relativePath).path) {
+            resolved = projectPackageURL.appendingPathComponent(relativePath)
+        } else if let bookmark = reference.securityScopedBookmark {
             var stale = false
             do {
                 resolved = try URL(

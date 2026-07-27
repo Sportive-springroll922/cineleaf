@@ -26,6 +26,8 @@ final class EditorState: ObservableObject {
     @Published private(set) var isRecordingVoiceover = false
     @Published private(set) var isDetectingSilence = false
     @Published private(set) var isDetectingBeats = false
+    @Published private(set) var isCreatingFreezeFrame = false
+    @Published private(set) var consolidationProgress: Double?
     @Published var pendingSilenceRemoval: SilenceRemovalProposal?
     @Published private(set) var waveforms: [UUID: [Float]] = [:]
     @Published private(set) var mediaAvailability: [UUID: MediaAvailability] = [:]
@@ -55,6 +57,8 @@ final class EditorState: ObservableObject {
     private let voiceoverRecorder = VoiceoverRecorder()
     private let silenceDetection = SilenceDetectionService()
     private let beatDetection = BeatDetectionService()
+    private let freezeFrameService = FreezeFrameService()
+    private let mediaConsolidator = ProjectMediaConsolidator()
     private var voiceoverStart = RationalTime.zero
     private var autosaveTask: Task<Void, Never>?
     private var previewTask: Task<Void, Never>?
@@ -126,6 +130,7 @@ final class EditorState: ObservableObject {
                 try await self.store.open(url)
             }
             install(opened, url: url)
+            await accessManager.setProjectPackageURL(url)
             recentProjects.add(url)
             await updateMediaAvailability()
             scheduleAllWaveforms()
@@ -154,8 +159,12 @@ final class EditorState: ObservableObject {
 
     func saveAs(_ url: URL) async -> Bool {
         projectURL = url
+        await accessManager.setProjectPackageURL(url)
         let saved = await save()
-        if !saved { projectURL = nil }
+        if !saved {
+            projectURL = nil
+            await accessManager.setProjectPackageURL(nil)
+        }
         return saved
     }
 
@@ -170,6 +179,7 @@ final class EditorState: ObservableObject {
         renderedComposition = nil
         await compositionBuilder.clearCaches()
         await accessManager.releaseAll()
+        await accessManager.setProjectPackageURL(nil)
         project = nil
         projectURL = nil
         editor = nil
@@ -565,6 +575,102 @@ final class EditorState: ObservableObject {
             }
         } catch {
             present(error, messageKey: "error.beat.detect")
+        }
+    }
+
+    func createFreezeFrame(for clipID: UUID) async {
+        guard let project,
+              let clip = project.timeline.tracks.flatMap(\.clips).first(where: { $0.id == clipID }),
+              clip.kind == .video,
+              let assetID = clip.assetID,
+              let asset = project.assets.first(where: { $0.id == assetID }),
+              let track = project.timeline.tracks.first(where: { $0.clips.contains { $0.id == clipID } }) else { return }
+        isCreatingFreezeFrame = true
+        defer { isCreatingFreezeFrame = false }
+        do {
+            let sourceURL = try await accessManager.resolve(asset.reference)
+            let localTime = (playback.currentTime - clip.timelineStart).clamped(to: .zero...clip.duration)
+            let sourceDuration = RationalTime(
+                seconds: clip.duration.seconds * clip.playbackRate,
+                preferredTimescale: 60_000
+            )
+            let sourceOffset: RationalTime
+            if clip.isReversed {
+                let oneFrame = project.frameRate.value.frameDuration
+                sourceOffset = max(
+                    sourceDuration - RationalTime(
+                        seconds: localTime.seconds * clip.playbackRate,
+                        preferredTimescale: 60_000
+                    ) - oneFrame,
+                    .zero
+                )
+            } else {
+                sourceOffset = RationalTime(
+                    seconds: localTime.seconds * clip.playbackRate,
+                    preferredTimescale: 60_000
+                )
+            }
+            let imageURL = try await freezeFrameService.create(
+                url: sourceURL,
+                sourceTime: (clip.sourceStart + sourceOffset).cmTime
+            )
+            let inspection = try await inspector.inspect(url: imageURL)
+            let freezeAsset = MediaAsset(
+                displayName: String(localized: "freeze.asset_name"),
+                kind: .image,
+                reference: MediaReference(lastKnownPath: imageURL.path),
+                metadata: inspection.metadata
+            )
+            let freezeDuration = RationalTime(value: 2, timescale: 1)
+            let insertionTime = clip.timelineStart + localTime
+            let freezeClip = TimelineClip(
+                name: freezeAsset.displayName,
+                kind: .image,
+                assetID: freezeAsset.id,
+                timelineStart: insertionTime,
+                duration: freezeDuration,
+                transform: clip.transform,
+                opacity: clip.opacity,
+                colorAdjustments: clip.colorAdjustments,
+                effects: clip.effects
+            )
+            performEdit { editor in
+                try editor.addAsset(freezeAsset)
+                try editor.insertEdit(freezeClip, into: track.id, at: insertionTime)
+            }
+            selectedClipIDs = [freezeClip.id]
+        } catch {
+            present(error, messageKey: "error.freeze.create")
+        }
+    }
+
+    func consolidateProjectMedia() async {
+        guard let project, let packageURL = projectURL else {
+            present(ProjectMediaConsolidationError.projectMustBeSaved, messageKey: "error.media.consolidate_save")
+            return
+        }
+        consolidationProgress = 0
+        defer { consolidationProgress = nil }
+        do {
+            var replacements: [MediaAsset] = []
+            replacements.reserveCapacity(project.assets.count)
+            for (index, asset) in project.assets.enumerated() {
+                try Task.checkCancellation()
+                let source = try await accessManager.resolve(asset.reference)
+                var replacement = asset
+                replacement.reference = try await mediaConsolidator.copy(
+                    asset: asset,
+                    from: source,
+                    into: packageURL
+                )
+                replacements.append(replacement)
+                consolidationProgress = Double(index + 1) / Double(max(project.assets.count, 1))
+            }
+            performEdit { try $0.replaceAssets(replacements) }
+            await accessManager.setProjectPackageURL(packageURL)
+            _ = await save()
+        } catch {
+            present(error, messageKey: "error.media.consolidate")
         }
     }
 

@@ -31,6 +31,12 @@ struct CineleafCommands: Commands {
             Button("media.import") { importPanel() }
                 .keyboardShortcut("i", modifiers: .command)
                 .disabled(state.project == nil)
+            Button("media.consolidate") {
+                Task { await state.consolidateProjectMedia() }
+            }
+            .disabled(
+                state.projectURL == nil || state.project?.assets.isEmpty != false || state.consolidationProgress != nil
+            )
             Divider()
             Button("export.action") { state.isExportSheetPresented = true }
                 .keyboardShortcut("e", modifiers: .command)
@@ -64,6 +70,12 @@ struct CineleafCommands: Commands {
             Button("timeline.duplicate") { state.duplicateSelection() }
                 .keyboardShortcut("d", modifiers: .command)
                 .disabled(state.selectedClipIDs.count != 1)
+            Button("freeze.create") {
+                guard let id = state.selectedClipIDs.first else { return }
+                Task { await state.createFreezeFrame(for: id) }
+            }
+            .keyboardShortcut("f", modifiers: [.command, .shift])
+            .disabled(state.selectedClip?.kind != .video || state.isCreatingFreezeFrame)
             Button("timeline.delete") { state.deleteSelection() }
                 .keyboardShortcut(.delete, modifiers: [])
                 .disabled(state.selectedClipIDs.isEmpty)
