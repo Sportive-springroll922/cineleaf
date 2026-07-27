@@ -13,6 +13,12 @@ public enum ProjectValidationError: Error, Equatable, Sendable {
     case invalidAudioVolume(UUID)
     case invalidTransform(UUID)
     case invalidFade(UUID)
+    case invalidPlaybackRate(UUID)
+    case invalidColorAdjustments(UUID)
+    case invalidEffect(UUID)
+    case invalidTransition(UUID)
+    case invalidKeyframe(UUID)
+    case invalidRole(UUID)
 }
 
 public enum ProjectValidator {
@@ -33,6 +39,12 @@ public enum ProjectValidator {
         for asset in project.assets where !identifiers.insert(asset.id).inserted {
             throw ProjectValidationError.duplicateIdentifier(asset.id)
         }
+        for marker in project.timeline.markers {
+            guard identifiers.insert(marker.id).inserted else {
+                throw ProjectValidationError.duplicateIdentifier(marker.id)
+            }
+            guard marker.time >= .zero else { throw ProjectValidationError.invalidTime(marker.id) }
+        }
 
         for track in project.timeline.tracks {
             guard identifiers.insert(track.id).inserted else {
@@ -47,6 +59,9 @@ public enum ProjectValidator {
                 guard clip.timelineStart >= .zero, clip.sourceStart >= .zero, clip.duration > .zero else {
                     throw ProjectValidationError.invalidTime(clip.id)
                 }
+                guard clip.playbackRate.isFinite, (0.25...4).contains(clip.playbackRate) else {
+                    throw ProjectValidationError.invalidPlaybackRate(clip.id)
+                }
                 guard clip.kind.compatibleTrack == track.kind else {
                     throw ProjectValidationError.incompatibleTrack(clip.id)
                 }
@@ -60,7 +75,7 @@ public enum ProjectValidator {
                     }
                     if clip.kind != .image,
                        let sourceDuration = assetsByID[assetID]?.metadata.duration,
-                       clip.sourceStart + clip.duration > sourceDuration {
+                       clip.sourceStart + scaled(clip.duration, by: clip.playbackRate) > sourceDuration {
                         throw ProjectValidationError.invalidTime(clip.id)
                     }
                 } else {
@@ -87,6 +102,39 @@ public enum ProjectValidator {
                       clip.fades.audioIn + clip.fades.audioOut <= clip.duration else {
                     throw ProjectValidationError.invalidFade(clip.id)
                 }
+                let color = clip.colorAdjustments
+                guard [color.exposure, color.contrast, color.saturation, color.temperature, color.tint,
+                       color.highlights, color.shadows, color.sharpen, color.vignette].allSatisfy(\.isFinite),
+                      (-4...4).contains(color.exposure), (0...4).contains(color.contrast),
+                      (0...4).contains(color.saturation), (-1...1).contains(color.temperature),
+                      (-1...1).contains(color.tint), (-1...1).contains(color.highlights),
+                      (-1...1).contains(color.shadows), (0...1).contains(color.sharpen),
+                      (0...1).contains(color.vignette) else {
+                    throw ProjectValidationError.invalidColorAdjustments(clip.id)
+                }
+                var effectIDs = Set<UUID>()
+                for effect in clip.effects {
+                    guard effectIDs.insert(effect.id).inserted else {
+                        throw ProjectValidationError.duplicateIdentifier(effect.id)
+                    }
+                    guard effect.amount.isFinite, (0...1).contains(effect.amount) else {
+                        throw ProjectValidationError.invalidEffect(clip.id)
+                    }
+                }
+                for transition in [clip.transitionIn, clip.transitionOut].compactMap({ $0 }) {
+                    guard transition.duration > .zero, transition.duration <= clip.duration else {
+                        throw ProjectValidationError.invalidTransition(clip.id)
+                    }
+                }
+                guard validKeyframes(clip.keyframes, duration: clip.duration) else {
+                    throw ProjectValidationError.invalidKeyframe(clip.id)
+                }
+                switch clip.role {
+                case .standard: break
+                case .subtitle where clip.kind == .text: break
+                case .voiceover where clip.kind == .audio: break
+                default: throw ProjectValidationError.invalidRole(clip.id)
+                }
                 if index > 0 {
                     let previous = ordered[index - 1]
                     if previous.timeRange.intersects(clip.timeRange) {
@@ -95,5 +143,26 @@ public enum ProjectValidator {
                 }
             }
         }
+    }
+
+    private static func scaled(_ time: RationalTime, by factor: Double) -> RationalTime {
+        RationalTime(seconds: time.seconds * factor, preferredTimescale: 60_000)
+    }
+
+    private static func validKeyframes(_ keyframes: ClipKeyframes, duration: RationalTime) -> Bool {
+        for property in KeyframedProperty.allCases {
+            let frames = keyframes[property]
+            guard frames.allSatisfy({ $0.time >= .zero && $0.time <= duration && $0.value.isFinite }) else {
+                return false
+            }
+            guard zip(frames, frames.dropFirst()).allSatisfy({ pair in pair.0.time < pair.1.time }) else { return false }
+            switch property {
+            case .opacity where !frames.allSatisfy({ (0...1).contains($0.value) }): return false
+            case .volume where !frames.allSatisfy({ (0...2).contains($0.value) }): return false
+            case .scale where !frames.allSatisfy({ $0.value > 0 }): return false
+            default: break
+            }
+        }
+        return true
     }
 }

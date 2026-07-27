@@ -253,6 +253,16 @@ public struct TimelineClip: Identifiable, Codable, Hashable, Sendable {
     public var audioVolume: Double
     public var fades: ClipFades
     public var textStyle: TextStyle?
+    public var playbackRate: Double
+    public var isReversed: Bool
+    public var groupID: UUID?
+    public var linkGroupID: UUID?
+    public var role: ClipRole
+    public var colorAdjustments: ColorAdjustments
+    public var effects: [VideoEffect]
+    public var transitionIn: ClipTransition?
+    public var transitionOut: ClipTransition?
+    public var keyframes: ClipKeyframes
 
     public init(
         id: UUID = UUID(),
@@ -268,7 +278,17 @@ public struct TimelineClip: Identifiable, Codable, Hashable, Sendable {
         isVideoMuted: Bool = false,
         audioVolume: Double = 1,
         fades: ClipFades = ClipFades(),
-        textStyle: TextStyle? = nil
+        textStyle: TextStyle? = nil,
+        playbackRate: Double = 1,
+        isReversed: Bool = false,
+        groupID: UUID? = nil,
+        linkGroupID: UUID? = nil,
+        role: ClipRole = .standard,
+        colorAdjustments: ColorAdjustments = .neutral,
+        effects: [VideoEffect] = [],
+        transitionIn: ClipTransition? = nil,
+        transitionOut: ClipTransition? = nil,
+        keyframes: ClipKeyframes = ClipKeyframes()
     ) {
         self.id = id
         self.name = name
@@ -284,6 +304,16 @@ public struct TimelineClip: Identifiable, Codable, Hashable, Sendable {
         self.audioVolume = audioVolume
         self.fades = fades
         self.textStyle = textStyle
+        self.playbackRate = playbackRate
+        self.isReversed = isReversed
+        self.groupID = groupID
+        self.linkGroupID = linkGroupID
+        self.role = role
+        self.colorAdjustments = colorAdjustments
+        self.effects = effects
+        self.transitionIn = transitionIn
+        self.transitionOut = transitionOut
+        self.keyframes = keyframes
     }
 
     public var timeRange: RationalTimeRange {
@@ -320,9 +350,11 @@ public struct TimelineTrack: Identifiable, Codable, Hashable, Sendable {
 
 public struct Timeline: Codable, Hashable, Sendable {
     public var tracks: [TimelineTrack]
+    public var markers: [TimelineMarker]
 
-    public init(tracks: [TimelineTrack] = []) {
+    public init(tracks: [TimelineTrack] = [], markers: [TimelineMarker] = []) {
         self.tracks = tracks
+        self.markers = markers
     }
 
     public var duration: RationalTime {
@@ -385,7 +417,7 @@ public struct ExportPreferences: Codable, Hashable, Sendable {
 }
 
 public struct CineleafProject: Identifiable, Codable, Hashable, Sendable {
-    public static let currentFormatVersion = 1
+    public static let currentFormatVersion = 2
 
     public var formatVersion: Int
     public var id: UUID

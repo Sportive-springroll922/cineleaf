@@ -42,11 +42,41 @@ public struct ProjectCodec: Sendable {
             case 0:
                 object["formatVersion"] = 1
                 workingVersion = 1
+            case 1:
+                migrateVersionOneToTwo(&object)
+                object["formatVersion"] = 2
+                workingVersion = 2
             default:
                 throw ProjectPersistenceError.migrationFailed(workingVersion)
             }
         }
         return try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys])
+    }
+
+    private func migrateVersionOneToTwo(_ object: inout [String: Any]) {
+        guard var timeline = object["timeline"] as? [String: Any],
+              var tracks = timeline["tracks"] as? [[String: Any]] else { return }
+        timeline["markers"] = timeline["markers"] ?? []
+        for trackIndex in tracks.indices {
+            guard var clips = tracks[trackIndex]["clips"] as? [[String: Any]] else { continue }
+            for clipIndex in clips.indices {
+                clips[clipIndex]["playbackRate"] = clips[clipIndex]["playbackRate"] ?? 1.0
+                clips[clipIndex]["isReversed"] = clips[clipIndex]["isReversed"] ?? false
+                clips[clipIndex]["role"] = clips[clipIndex]["role"] ?? ClipRole.standard.rawValue
+                clips[clipIndex]["colorAdjustments"] = clips[clipIndex]["colorAdjustments"] ?? [
+                    "exposure": 0.0, "contrast": 1.0, "saturation": 1.0, "temperature": 0.0,
+                    "tint": 0.0, "highlights": 0.0, "shadows": 0.0, "sharpen": 0.0, "vignette": 0.0
+                ]
+                clips[clipIndex]["effects"] = clips[clipIndex]["effects"] ?? []
+                clips[clipIndex]["keyframes"] = clips[clipIndex]["keyframes"] ?? [
+                    "positionX": [], "positionY": [], "scale": [], "rotationDegrees": [],
+                    "opacity": [], "volume": []
+                ]
+            }
+            tracks[trackIndex]["clips"] = clips
+        }
+        timeline["tracks"] = tracks
+        object["timeline"] = timeline
     }
 }
 

@@ -113,7 +113,9 @@ public struct ProjectEditor: Sendable {
         }
         clip.timelineStart = newStart
         clip.duration = clip.duration - delta
-        if clip.kind != .text { clip.sourceStart = clip.sourceStart + delta }
+        if clip.kind != .text, !clip.isReversed {
+            clip.sourceStart = clip.sourceStart + Self.scaled(delta, by: clip.playbackRate)
+        }
         clip.fades = Self.clampedFades(clip.fades, duration: clip.duration)
         draft.timeline.tracks[location.track].clips[location.clip] = clip
         draft.timeline.tracks[location.track].clips.sort { $0.timelineStart < $1.timelineStart }
@@ -122,7 +124,11 @@ public struct ProjectEditor: Sendable {
 
     public mutating func trimEnd(of clipID: UUID, to newEnd: RationalTime) throws {
         try updateClip(clipID) { clip in
+            let oldDuration = clip.duration
             clip.duration = newEnd - clip.timelineStart
+            if clip.kind != .text, clip.isReversed, clip.duration < oldDuration {
+                clip.sourceStart = clip.sourceStart + Self.scaled(oldDuration - clip.duration, by: clip.playbackRate)
+            }
             clip.fades = Self.clampedFades(clip.fades, duration: clip.duration)
         }
     }
@@ -141,7 +147,14 @@ public struct ProjectEditor: Sendable {
         second.id = UUID()
         second.timelineStart = time
         second.duration = first.duration - leftDuration
-        if second.kind != .text { second.sourceStart = first.sourceStart + leftDuration }
+        if second.kind != .text {
+            let leftSourceDuration = Self.scaled(leftDuration, by: first.playbackRate)
+            if first.isReversed {
+                first.sourceStart = first.sourceStart + Self.scaled(first.duration, by: first.playbackRate) - leftSourceDuration
+            } else {
+                second.sourceStart = first.sourceStart + leftSourceDuration
+            }
+        }
         first.duration = leftDuration
         draft.timeline.tracks[location.track].clips[location.clip] = first
         draft.timeline.tracks[location.track].clips.insert(second, at: location.clip + 1)
@@ -231,27 +244,27 @@ public struct ProjectEditor: Sendable {
         return SnapResult(time: closest, didSnap: true)
     }
 
-    private mutating func commit(_ draft: CineleafProject) throws {
+    mutating func commit(_ draft: CineleafProject) throws {
         var updated = draft
         updated.modifiedAt = Date()
         try ProjectValidator.validate(updated)
         project = updated
     }
 
-    private func trackIndex(_ id: UUID, in project: CineleafProject) throws -> Int {
+    func trackIndex(_ id: UUID, in project: CineleafProject) throws -> Int {
         guard let index = project.timeline.tracks.firstIndex(where: { $0.id == id }) else {
             throw EditingError.trackNotFound(id)
         }
         return index
     }
 
-    private func editableTrackIndex(_ id: UUID, in project: CineleafProject) throws -> Int {
+    func editableTrackIndex(_ id: UUID, in project: CineleafProject) throws -> Int {
         let index = try trackIndex(id, in: project)
         guard !project.timeline.tracks[index].isLocked else { throw EditingError.trackLocked(id) }
         return index
     }
 
-    private func clipLocation(_ id: UUID, in project: CineleafProject) throws -> (track: Int, clip: Int) {
+    func clipLocation(_ id: UUID, in project: CineleafProject) throws -> (track: Int, clip: Int) {
         for (trackIndex, track) in project.timeline.tracks.enumerated() {
             if let clipIndex = track.clips.firstIndex(where: { $0.id == id }) {
                 return (trackIndex, clipIndex)
@@ -268,6 +281,10 @@ public struct ProjectEditor: Sendable {
             audioIn: min(fades.audioIn, half),
             audioOut: min(fades.audioOut, half)
         )
+    }
+
+    static func scaled(_ time: RationalTime, by factor: Double) -> RationalTime {
+        RationalTime(seconds: time.seconds * factor, preferredTimescale: 60_000)
     }
 }
 

@@ -26,6 +26,31 @@ final class PersistenceTests: XCTestCase {
         XCTAssertEqual(originalObject["formatVersion"] as? Int, 0)
     }
 
+    func testVersionOneMigrationAddsAdvancedEditingDefaults() throws {
+        let fixture = TestFixtures.projectWithClip()
+        let current = try ProjectCodec().encode(fixture.project)
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: current) as? [String: Any])
+        object["formatVersion"] = 1
+        var timeline = try XCTUnwrap(object["timeline"] as? [String: Any])
+        var tracks = try XCTUnwrap(timeline["tracks"] as? [[String: Any]])
+        var clips = try XCTUnwrap(tracks[0]["clips"] as? [[String: Any]])
+        for key in ["playbackRate", "isReversed", "role", "colorAdjustments", "effects", "keyframes"] {
+            clips[0].removeValue(forKey: key)
+        }
+        tracks[0]["clips"] = clips
+        timeline["tracks"] = tracks
+        object["timeline"] = timeline
+        let legacy = try JSONSerialization.data(withJSONObject: object)
+
+        let migrated = try ProjectCodec().decode(legacy)
+        let clip = try XCTUnwrap(migrated.timeline.tracks[0].clips.first)
+
+        XCTAssertEqual(migrated.formatVersion, CineleafProject.currentFormatVersion)
+        XCTAssertEqual(clip.playbackRate, 1)
+        XCTAssertEqual(clip.effects, [])
+        XCTAssertEqual(clip.keyframes, ClipKeyframes())
+    }
+
     func testRejectsFutureProjectWithoutRewriting() throws {
         let fixture = TestFixtures.projectWithClip()
         let current = try ProjectCodec().encode(fixture.project)
