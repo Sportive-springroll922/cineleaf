@@ -43,4 +43,3 @@ public struct ExportPlan: Equatable, Sendable {
         return rounded.isMultiple(of: 2) ? rounded : rounded - 1
     }
 }
-

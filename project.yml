@@ -10,7 +10,7 @@ packages:
     path: Packages/CineleafCore
 settings:
   base:
-    SWIFT_VERSION: "5.10"
+    SWIFT_VERSION: "5.0"
     MACOSX_DEPLOYMENT_TARGET: "14.0"
     CLANG_ENABLE_MODULES: YES
     ENABLE_HARDENED_RUNTIME: YES

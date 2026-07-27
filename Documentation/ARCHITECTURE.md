@@ -31,4 +31,3 @@ The composition builder maps enabled timeline clips into `AVMutableComposition`,
 ## Diagnostics and privacy
 
 Local signposts cover project open/save, import, thumbnails, waveforms, composition rebuild, seeking, playback startup, autosave, proxy work, and export. Diagnostics remain on-device and contain no source content, account identifiers, or remote endpoint. Cineleaf has no telemetry or network service.
-

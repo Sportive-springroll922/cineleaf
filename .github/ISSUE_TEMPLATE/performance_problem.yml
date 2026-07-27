@@ -1,0 +1,28 @@
+name: Performance problem
+description: Report a freeze, slow operation, memory growth, or high resource use.
+title: "[Performance]: "
+labels: [performance]
+body:
+  - type: input
+    id: environment
+    attributes:
+      label: Mac model, memory, macOS, and Cineleaf revision
+    validations:
+      required: true
+  - type: textarea
+    id: project
+    attributes:
+      label: Project characteristics
+      description: Approximate duration, clip/track counts, resolutions, codecs, and whether proxies were used. Do not include private filenames.
+    validations:
+      required: true
+  - type: textarea
+    id: symptom
+    attributes:
+      label: What became slow or unresponsive?
+    validations:
+      required: true
+  - type: textarea
+    id: measurement
+    attributes:
+      label: Measurements or Instruments evidence

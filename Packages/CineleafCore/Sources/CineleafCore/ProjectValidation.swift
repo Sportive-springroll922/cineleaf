@@ -29,6 +29,7 @@ public enum ProjectValidator {
             throw ProjectValidationError.duplicateIdentifier(project.id)
         }
         let assetIDs = Set(project.assets.map(\.id))
+        let assetsByID = Dictionary(uniqueKeysWithValues: project.assets.map { ($0.id, $0) })
         for asset in project.assets where !identifiers.insert(asset.id).inserted {
             throw ProjectValidationError.duplicateIdentifier(asset.id)
         }
@@ -56,6 +57,11 @@ public enum ProjectValidator {
                 } else if let assetID = clip.assetID {
                     guard assetIDs.contains(assetID) else {
                         throw ProjectValidationError.missingAsset(assetID)
+                    }
+                    if clip.kind != .image,
+                       let sourceDuration = assetsByID[assetID]?.metadata.duration,
+                       clip.sourceStart + clip.duration > sourceDuration {
+                        throw ProjectValidationError.invalidTime(clip.id)
                     }
                 } else {
                     throw ProjectValidationError.missingAsset(clip.id)
@@ -91,4 +97,3 @@ public enum ProjectValidator {
         }
     }
 }
-

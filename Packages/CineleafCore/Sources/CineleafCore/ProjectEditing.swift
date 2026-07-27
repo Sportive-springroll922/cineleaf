@@ -114,6 +114,7 @@ public struct ProjectEditor: Sendable {
         clip.timelineStart = newStart
         clip.duration = clip.duration - delta
         if clip.kind != .text { clip.sourceStart = clip.sourceStart + delta }
+        clip.fades = Self.clampedFades(clip.fades, duration: clip.duration)
         draft.timeline.tracks[location.track].clips[location.clip] = clip
         draft.timeline.tracks[location.track].clips.sort { $0.timelineStart < $1.timelineStart }
         try commit(draft)
@@ -122,6 +123,7 @@ public struct ProjectEditor: Sendable {
     public mutating func trimEnd(of clipID: UUID, to newEnd: RationalTime) throws {
         try updateClip(clipID) { clip in
             clip.duration = newEnd - clip.timelineStart
+            clip.fades = Self.clampedFades(clip.fades, duration: clip.duration)
         }
     }
 
@@ -257,6 +259,16 @@ public struct ProjectEditor: Sendable {
         }
         throw EditingError.clipNotFound(id)
     }
+
+    private static func clampedFades(_ fades: ClipFades, duration: RationalTime) -> ClipFades {
+        let half = RationalTime(seconds: max(duration.seconds / 2, 0), preferredTimescale: 6_000)
+        return ClipFades(
+            videoIn: min(fades.videoIn, half),
+            videoOut: min(fades.videoOut, half),
+            audioIn: min(fades.audioIn, half),
+            audioOut: min(fades.audioOut, half)
+        )
+    }
 }
 
 public struct EditHistory: Sendable {
@@ -295,4 +307,3 @@ public struct EditHistory: Sendable {
         future.removeAll(keepingCapacity: false)
     }
 }
-

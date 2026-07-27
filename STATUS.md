@@ -22,4 +22,3 @@ The repository was bootstrapped on Windows 10 Pro (64-bit) with Git 2.54.0 and G
 ## Reporting rule
 
 Roadmap items are not presented as working features. This file is updated from observed build/test/manual evidence, never from the presence of source code alone.
-

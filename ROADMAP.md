@@ -22,4 +22,3 @@ Ripple/insert/overwrite edits, linked clips, groups, markers, speed changes, bas
 ## Later — advanced local tools
 
 Chroma key, masks, Vision-powered tracking and segmentation, on-device captions, silence editing, beat markers, nested timelines, LUTs, scopes, metering, and an optional dependency-reviewed extension backend.
-

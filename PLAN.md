@@ -24,4 +24,3 @@ The acceptance test for Milestone 1 is a real macOS workflow: create a project, 
 - Secret, license, localization, and tracked-file audits before every push
 
 The current Windows host cannot run Swift, Xcode, AVFoundation, or a macOS GUI. macOS-only gates therefore run in GitHub Actions and must not be reported as local results.
-

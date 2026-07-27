@@ -29,6 +29,8 @@ Package.resolved
 *.swp
 *.tmp
 *.log
+__pycache__/
+*.pyc
 .env
 .env.*
 !.env.example

@@ -45,4 +45,3 @@ public protocol ProjectExporting: Sendable {
     func export(project: CineleafProject, to url: URL) async throws -> Progress
     func cancel() async
 }
-

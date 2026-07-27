@@ -11,4 +11,3 @@
 9. Inspect the finished asset before reporting success; remove partial output on failure or cancellation.
 
 The preview may choose derived proxy media and display-sized output. The export render plan always resolves source media and requested delivery settings. Preview degradation must never alter project data or final quality.
-

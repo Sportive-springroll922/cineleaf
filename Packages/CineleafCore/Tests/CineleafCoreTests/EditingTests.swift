@@ -91,4 +91,3 @@ final class EditingTests: XCTestCase {
         XCTAssertEqual(history.redo(current: second)?.name, "Third")
     }
 }
-

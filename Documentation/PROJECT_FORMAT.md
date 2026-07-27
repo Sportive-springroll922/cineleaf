@@ -21,4 +21,3 @@ JSON is first encoded and validated in memory, written atomically to a sibling t
 ## Migration
 
 The decoder reads the version before decoding the current model. Each migration transforms exactly one version to the next and revalidates the result. Unknown future versions are rejected without rewriting the package. A failed migration leaves the original bytes unchanged and returns a user-facing error with technical detail available locally.
-

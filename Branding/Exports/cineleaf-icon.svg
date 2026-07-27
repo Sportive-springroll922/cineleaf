@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <title>Cineleaf icon</title>
+  <rect x="64" y="64" width="896" height="896" rx="208" fill="#142E28"/>
+  <path d="M238 340V270Q238 230 278 230H350 M674 230H746Q786 230 786 270V340 M238 684V754Q238 794 278 794H350 M674 794H746Q786 794 786 754V684"
+        fill="none" stroke="#8AE1AF" stroke-width="34" stroke-linecap="round"/>
+  <path d="M300 728C286 508 422 334 736 278C744 510 620 704 338 754C319 758 302 746 300 728Z" fill="#E8FFF1"/>
+  <path d="M330 718C456 614 558 502 698 326" fill="none" stroke="#142E28" stroke-width="44" stroke-linecap="round"/>
+  <path d="M397 668L331 611 M500 572L425 505 M604 462L532 400" fill="none" stroke="#142E28" stroke-width="28" stroke-linecap="round"/>
+</svg>

@@ -123,4 +123,3 @@ public struct RationalRate: Codable, Hashable, Sendable {
         RationalTime(value: Int64(denominator), timescale: numerator)
     }
 }
-

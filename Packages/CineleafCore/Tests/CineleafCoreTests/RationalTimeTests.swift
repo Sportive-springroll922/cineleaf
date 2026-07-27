@@ -22,4 +22,3 @@ final class RationalTimeTests: XCTestCase {
         XCTAssertFalse(first.contains(first.end))
     }
 }
-

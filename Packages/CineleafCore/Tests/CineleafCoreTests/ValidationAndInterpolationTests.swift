@@ -58,4 +58,3 @@ final class ValidationAndInterpolationTests: XCTestCase {
         XCTAssertTrue(plan.resolution.height.isMultiple(of: 2))
     }
 }
-

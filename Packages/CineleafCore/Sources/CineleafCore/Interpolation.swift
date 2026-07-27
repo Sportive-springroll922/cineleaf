@@ -73,4 +73,3 @@ public enum KeyframeInterpolator {
         )
     }
 }
-

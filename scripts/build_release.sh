@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPOSITORY_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DIST_DIR="$REPOSITORY_ROOT/dist"
+DERIVED_DATA="$REPOSITORY_ROOT/build/ReleaseDerivedData"
+
+if [[ "$(uname -s)" != "Darwin" ]]; then
+  echo "Release builds require macOS with Xcode." >&2
+  exit 1
+fi
+for tool in xcodebuild xcodegen codesign ditto shasum; do
+  command -v "$tool" >/dev/null || { echo "Missing required tool: $tool" >&2; exit 1; }
+done
+
+case "$DIST_DIR" in
+  "$REPOSITORY_ROOT/dist") ;;
+  *) echo "Refusing unexpected distribution directory: $DIST_DIR" >&2; exit 1 ;;
+esac
+rm -rf "$DIST_DIR" "$DERIVED_DATA"
+mkdir -p "$DIST_DIR" "$DERIVED_DATA"
+cd "$REPOSITORY_ROOT"
+
+xcodegen generate
+xcodebuild \
+  -project Cineleaf.xcodeproj \
+  -scheme Cineleaf \
+  -configuration Release \
+  -destination 'generic/platform=macOS' \
+  -derivedDataPath "$DERIVED_DATA" \
+  ARCHS='arm64 x86_64' \
+  ONLY_ACTIVE_ARCH=NO \
+  CODE_SIGNING_ALLOWED=NO \
+  build
+
+APP_SOURCE="$DERIVED_DATA/Build/Products/Release/Cineleaf.app"
+[[ -d "$APP_SOURCE" ]] || { echo "Cineleaf.app was not produced." >&2; exit 1; }
+ditto "$APP_SOURCE" "$DIST_DIR/Cineleaf.app"
+codesign --force --deep --sign - "$DIST_DIR/Cineleaf.app"
+codesign --verify --deep --strict "$DIST_DIR/Cineleaf.app"
+ditto -c -k --sequesterRsrc --keepParent "$DIST_DIR/Cineleaf.app" "$DIST_DIR/Cineleaf-0.1.0-macOS.zip"
+"$REPOSITORY_ROOT/scripts/create_dmg.sh" "$DIST_DIR/Cineleaf.app" "$DIST_DIR/Cineleaf-0.1.0-macOS.dmg"
+
+(
+  cd "$DIST_DIR"
+  shasum -a 256 Cineleaf-0.1.0-macOS.zip Cineleaf-0.1.0-macOS.dmg > SHA256SUMS.txt
+)
+
+echo "Created ad-hoc signed, non-notarized artifacts in $DIST_DIR"

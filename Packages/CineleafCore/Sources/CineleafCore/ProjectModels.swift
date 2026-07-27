@@ -427,4 +427,3 @@ public struct CineleafProject: Identifiable, Codable, Hashable, Sendable {
         self.exportPreferences = exportPreferences ?? ExportPreferences(frameRate: frameRate)
     }
 }
-

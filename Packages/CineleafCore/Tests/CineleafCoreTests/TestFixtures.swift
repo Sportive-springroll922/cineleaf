@@ -43,4 +43,3 @@ enum TestFixtures {
         return (project, asset, clip, trackID)
     }
 }
-

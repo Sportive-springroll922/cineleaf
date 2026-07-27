@@ -1,0 +1,63 @@
+name: macOS CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cineleaf-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Select Xcode 16.4
+        run: sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
+      - name: Record toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate Xcode project
+        run: xcodegen generate
+      - name: Test editing core
+        run: swift test --package-path Packages/CineleafCore
+      - name: Build and test app
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project Cineleaf.xcodeproj \
+            -scheme Cineleaf \
+            -destination 'platform=macOS' \
+            -derivedDataPath DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            test | tee xcodebuild.log
+      - name: Build Release
+        run: |
+          xcodebuild \
+            -project Cineleaf.xcodeproj \
+            -scheme Cineleaf \
+            -configuration Release \
+            -destination 'platform=macOS' \
+            -derivedDataPath DerivedData-Release \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+      - name: Upload logs and generated project on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-ci-diagnostics
+          path: |
+            xcodebuild.log
+            Cineleaf.xcodeproj
+          if-no-files-found: ignore

@@ -22,4 +22,3 @@ Capture wall time, main-thread stalls, peak resident memory, file activity, and 
 ## Design budgets
 
 Interactive state changes target roughly 100 ms or less. Timeline drawing virtualizes the visible region with a small preload margin, waveforms use downsampled peaks, thumbnails match display density, caches are bounded, and media/background tasks are cancellable. These are engineering targets, not measured claims.
-
