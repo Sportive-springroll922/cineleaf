@@ -291,4 +291,27 @@ final class MediaPipelineIntegrationTests: XCTestCase {
         XCTAssertTrue(resolved.path.hasPrefix(movedPackage.path))
         await access.releaseAll()
     }
+
+    @MainActor
+    func testSavedExportPresetPersistsAndCanBeDeleted() throws {
+        let suite = "org.cineleaf.tests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let preferences = ExportPreferences(
+            resolution: .p2160,
+            frameRate: .fps60,
+            quality: .high,
+            codec: .hevc,
+            container: .mov
+        )
+
+        let store = ExportPresetStore(defaults: defaults)
+        store.save(name: "Master", preferences: preferences)
+        let reloaded = ExportPresetStore(defaults: defaults)
+
+        XCTAssertEqual(reloaded.presets.first?.name, "Master")
+        XCTAssertEqual(reloaded.presets.first?.preferences, preferences)
+        reloaded.delete(try XCTUnwrap(reloaded.presets.first?.id))
+        XCTAssertTrue(ExportPresetStore(defaults: defaults).presets.isEmpty)
+    }
 }

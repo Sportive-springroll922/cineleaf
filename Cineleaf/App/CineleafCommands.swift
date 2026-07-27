@@ -70,6 +70,12 @@ struct CineleafCommands: Commands {
             Button("timeline.duplicate") { state.duplicateSelection() }
                 .keyboardShortcut("d", modifiers: .command)
                 .disabled(state.selectedClipIDs.count != 1)
+            Button("clip.properties.copy") { state.copySelectedClipProperties() }
+                .keyboardShortcut("c", modifiers: [.command, .option])
+                .disabled(state.selectedClipIDs.count != 1)
+            Button("clip.properties.paste") { state.pasteClipProperties() }
+                .keyboardShortcut("v", modifiers: [.command, .option])
+                .disabled(!state.canPasteClipProperties || state.selectedClipIDs.isEmpty)
             Button("freeze.create") {
                 guard let id = state.selectedClipIDs.first else { return }
                 Task { await state.createFreezeFrame(for: id) }

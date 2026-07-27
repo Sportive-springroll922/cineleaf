@@ -3,6 +3,46 @@ import CineleafCore
 import SwiftUI
 import UniformTypeIdentifiers
 
+struct SavedExportPreset: Codable, Hashable, Identifiable {
+    var id: UUID
+    var name: String
+    var preferences: ExportPreferences
+}
+
+@MainActor
+final class ExportPresetStore: ObservableObject {
+    @Published private(set) var presets: [SavedExportPreset]
+    private let defaults: UserDefaults
+    private let key = "savedExportPresets"
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        presets = defaults.data(forKey: key)
+            .flatMap { try? JSONDecoder().decode([SavedExportPreset].self, from: $0) } ?? []
+    }
+
+    func save(name: String, preferences: ExportPreferences) {
+        let cleanName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanName.isEmpty else { return }
+        if let index = presets.firstIndex(where: { $0.name.localizedCaseInsensitiveCompare(cleanName) == .orderedSame }) {
+            presets[index].preferences = preferences
+        } else {
+            presets.append(SavedExportPreset(id: UUID(), name: cleanName, preferences: preferences))
+            presets.sort { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        }
+        persist()
+    }
+
+    func delete(_ id: UUID) {
+        presets.removeAll { $0.id == id }
+        persist()
+    }
+
+    private func persist() {
+        if let data = try? JSONEncoder().encode(presets) { defaults.set(data, forKey: key) }
+    }
+}
+
 @MainActor
 private final class ExportViewModel: ObservableObject {
     enum Status {
@@ -22,6 +62,16 @@ private final class ExportViewModel: ObservableObject {
     @Published var status = Status.idle
     private var task: Task<Void, Never>?
 
+    var preferences: ExportPreferences {
+        ExportPreferences(
+            resolution: resolution,
+            frameRate: frameRate,
+            quality: quality,
+            codec: codec,
+            container: container
+        )
+    }
+
     func load(_ project: CineleafProject) {
         filename = project.name
         resolution = project.exportPreferences.resolution
@@ -31,17 +81,19 @@ private final class ExportViewModel: ObservableObject {
         container = project.exportPreferences.container
     }
 
+    func apply(_ preferences: ExportPreferences) {
+        resolution = preferences.resolution
+        frameRate = preferences.frameRate
+        quality = preferences.quality
+        codec = preferences.codec
+        container = preferences.container
+    }
+
     func start(state: EditorState, project: CineleafProject) {
-        let preferences = ExportPreferences(
-            resolution: resolution,
-            frameRate: frameRate,
-            quality: quality,
-            codec: codec,
-            container: container
-        )
+        let selectedPreferences = preferences
         let plan: ExportPlan
         do {
-            plan = try ExportPlan(filename: filename, project: project, preferences: preferences)
+            plan = try ExportPlan(filename: filename, project: project, preferences: selectedPreferences)
         } catch {
             status = .failure(String(describing: error))
             return
@@ -52,7 +104,7 @@ private final class ExportViewModel: ObservableObject {
         panel.nameFieldStringValue = plan.filename + (container == .mp4 ? ".mp4" : ".mov")
         guard panel.runModal() == .OK, let destination = panel.url else { return }
 
-        state.updateExportPreferences(preferences)
+        state.updateExportPreferences(selectedPreferences)
         progress = 0
         status = .idle
         isExporting = true
@@ -93,12 +145,38 @@ struct ExportSheet: View {
     @EnvironmentObject private var state: EditorState
     @Environment(\.dismiss) private var dismiss
     @StateObject private var model = ExportViewModel()
+    @StateObject private var presetStore = ExportPresetStore()
+    @State private var presetName = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             Text("export.title")
                 .font(.title2.weight(.semibold))
             Form {
+                Section("export.presets") {
+                    if !presetStore.presets.isEmpty {
+                        Menu("export.preset_load") {
+                            ForEach(presetStore.presets) { preset in
+                                Button(preset.name) {
+                                    model.apply(preset.preferences)
+                                    presetName = preset.name
+                                }
+                            }
+                        }
+                        Menu("export.preset_delete") {
+                            ForEach(presetStore.presets) { preset in
+                                Button(preset.name, role: .destructive) { presetStore.delete(preset.id) }
+                            }
+                        }
+                    }
+                    HStack {
+                        TextField("export.preset_name", text: $presetName)
+                        Button("export.preset_save") {
+                            presetStore.save(name: presetName, preferences: model.preferences)
+                        }
+                        .disabled(presetName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    }
+                }
                 TextField("export.filename", text: $model.filename)
                 Picker("export.resolution", selection: $model.resolution) {
                     Text("720p").tag(ExportResolutionPreset.p720)
@@ -128,13 +206,7 @@ struct ExportSheet: View {
                    let plan = try? ExportPlan(
                     filename: model.filename,
                     project: project,
-                    preferences: ExportPreferences(
-                        resolution: model.resolution,
-                        frameRate: model.frameRate,
-                        quality: model.quality,
-                        codec: model.codec,
-                        container: model.container
-                    )
+                    preferences: model.preferences
                    ) {
                     LabeledContent("export.configuration") {
                         Text("\(plan.resolution.width) × \(plan.resolution.height) · \(plan.frameRate.numerator) fps · \(plan.codec == .h264 ? "H.264" : "HEVC")")

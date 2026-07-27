@@ -46,6 +46,17 @@ actor MediaDerivativeStore {
         try fileManager.removeItem(at: directory)
     }
 
+    func size() throws -> Int64 {
+        guard fileManager.fileExists(atPath: directory.path) else { return 0 }
+        return try fileManager.contentsOfDirectory(
+            at: directory,
+            includingPropertiesForKeys: [.fileSizeKey],
+            options: [.skipsHiddenFiles]
+        ).reduce(0) { total, url in
+            total + Int64((try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
+        }
+    }
+
     private func destinationURL(for key: String, extension pathExtension: String) -> URL {
         let digest = SHA256.hash(data: Data(key.utf8)).map { String(format: "%02x", $0) }.joined()
         return directory.appendingPathComponent(digest).appendingPathExtension(pathExtension)

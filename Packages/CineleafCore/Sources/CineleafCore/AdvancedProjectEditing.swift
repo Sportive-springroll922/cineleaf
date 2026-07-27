@@ -270,10 +270,22 @@ public extension ProjectEditor {
             draft.timeline.tracks[location.track].clips[location.clip].transform = properties.transform
             draft.timeline.tracks[location.track].clips[location.clip].opacity = properties.opacity
             draft.timeline.tracks[location.track].clips[location.clip].audioVolume = properties.audioVolume
-            draft.timeline.tracks[location.track].clips[location.clip].fades = properties.fades
+            let duration = draft.timeline.tracks[location.track].clips[location.clip].duration
+            draft.timeline.tracks[location.track].clips[location.clip].fades = Self.clampedFadesForAdvancedEditing(
+                properties.fades,
+                duration: duration
+            )
             draft.timeline.tracks[location.track].clips[location.clip].colorAdjustments = properties.colorAdjustments
-            draft.timeline.tracks[location.track].clips[location.clip].effects = properties.effects
-            draft.timeline.tracks[location.track].clips[location.clip].keyframes = properties.keyframes
+            draft.timeline.tracks[location.track].clips[location.clip].effects = properties.effects.map { effect in
+                var copy = effect
+                copy.id = UUID()
+                return copy
+            }
+            var keyframes = properties.keyframes
+            for property in KeyframedProperty.allCases {
+                keyframes[property] = keyframes[property].filter { $0.time <= duration }
+            }
+            draft.timeline.tracks[location.track].clips[location.clip].keyframes = keyframes
         }
         try commit(draft)
     }

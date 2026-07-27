@@ -229,6 +229,31 @@ final class AdvancedEditingTests: XCTestCase {
         XCTAssertEqual(editor.project.timeline.markers.map(\.name), ["Beat 1", "Beat 2"])
     }
 
+    func testPastePropertiesClampsTimingAndCreatesUniqueEffects() throws {
+        let fixture = threeClipProject()
+        var project = fixture.project
+        project.timeline.tracks[0].clips[1].duration = RationalTime(value: 2, timescale: 1)
+        project.timeline.tracks[0].clips[1].timelineStart = RationalTime(value: 10, timescale: 1)
+        var source = project.timeline.tracks[0].clips[0]
+        source.effects = [VideoEffect(kind: .bloom)]
+        source.fades = ClipFades(videoIn: RationalTime(value: 4, timescale: 1))
+        source.keyframes.opacity = [ScalarKeyframe(time: RationalTime(value: 5, timescale: 1), value: 0.5)]
+        project.timeline.tracks[0].clips[0] = source
+        var editor = try ProjectEditor(project: project)
+
+        try editor.pasteProperties(
+            ClipPropertyBundle(clip: source),
+            to: [project.timeline.tracks[0].clips[1].id, project.timeline.tracks[0].clips[2].id]
+        )
+
+        let targets = editor.project.timeline.tracks[0].clips.dropFirst()
+        XCTAssertEqual(targets.first?.fades.videoIn, RationalTime(value: 1, timescale: 1))
+        XCTAssertTrue(targets.first?.keyframes.opacity.isEmpty == true)
+        let effectIDs = targets.compactMap { $0.effects.first?.id }
+        XCTAssertEqual(Set(effectIDs).count, 2)
+        XCTAssertFalse(effectIDs.contains(source.effects[0].id))
+    }
+
     private func threeClipProject() -> (project: CineleafProject, clips: [TimelineClip]) {
         let asset = TestFixtures.asset(duration: RationalTime(value: 30, timescale: 1))
         var project = CineleafProject(name: "Advanced", assets: [asset])

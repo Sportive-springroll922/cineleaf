@@ -127,6 +127,11 @@ private struct ClipInspector: View {
                 }
 
                 Section("inspector.effects") {
+                    Menu("inspector.filter_preset") {
+                        ForEach(QuickFilterPreset.allCases, id: \.self) { preset in
+                            Button(preset.localizedName) { state.applyFilterPreset(preset, to: clip.id) }
+                        }
+                    }
                     ForEach(state.selectedClip?.effects ?? clip.effects) { effect in
                         HStack {
                             Toggle(effect.kind.localizedName, isOn: effectEnabledBinding(effect.id))
@@ -461,6 +466,17 @@ private extension VideoEffectKind {
         case .monochrome: "effect.monochrome"
         case .sepia: "effect.sepia"
         case .bloom: "effect.bloom"
+        }
+    }
+}
+
+private extension QuickFilterPreset {
+    var localizedName: LocalizedStringKey {
+        switch self {
+        case .vivid: "filter.vivid"
+        case .warmFilm: "filter.warm_film"
+        case .monochrome: "filter.monochrome"
+        case .softBloom: "filter.soft_bloom"
         }
     }
 }

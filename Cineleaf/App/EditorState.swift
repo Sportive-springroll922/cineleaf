@@ -11,6 +11,30 @@ struct PresentedError: Identifiable {
     var technicalDetail: String
 }
 
+enum QuickFilterPreset: String, CaseIterable {
+    case vivid
+    case warmFilm
+    case monochrome
+    case softBloom
+
+    var adjustments: ColorAdjustments {
+        switch self {
+        case .vivid: ColorAdjustments(contrast: 1.12, saturation: 1.25, sharpen: 0.16)
+        case .warmFilm: ColorAdjustments(exposure: 0.08, contrast: 1.08, saturation: 0.92, temperature: 0.18, vignette: 0.16)
+        case .monochrome: .neutral
+        case .softBloom: ColorAdjustments(exposure: 0.06, contrast: 0.94, saturation: 0.9)
+        }
+    }
+
+    var effects: [VideoEffect] {
+        switch self {
+        case .vivid, .warmFilm: []
+        case .monochrome: [VideoEffect(kind: .monochrome, amount: 1)]
+        case .softBloom: [VideoEffect(kind: .bloom, amount: 0.28)]
+        }
+    }
+}
+
 @MainActor
 final class EditorState: ObservableObject {
     @Published private(set) var project: CineleafProject?
@@ -28,6 +52,7 @@ final class EditorState: ObservableObject {
     @Published private(set) var isDetectingBeats = false
     @Published private(set) var isCreatingFreezeFrame = false
     @Published private(set) var consolidationProgress: Double?
+    @Published private(set) var canPasteClipProperties = false
     @Published var pendingSilenceRemoval: SilenceRemovalProposal?
     @Published private(set) var waveforms: [UUID: [Float]] = [:]
     @Published private(set) var mediaAvailability: [UUID: MediaAvailability] = [:]
@@ -63,6 +88,7 @@ final class EditorState: ObservableObject {
     private var autosaveTask: Task<Void, Never>?
     private var previewTask: Task<Void, Never>?
     private var waveformTasks: [UUID: Task<Void, Never>] = [:]
+    private var copiedClipProperties: ClipPropertyBundle?
     @Published private(set) var renderedComposition: RenderedComposition?
     private var isUITesting: Bool {
         ProcessInfo.processInfo.environment["CINELEAF_UI_TESTING"] == "1"
@@ -429,6 +455,24 @@ final class EditorState: ObservableObject {
 
     func removeEffect(_ effectID: UUID, from clipID: UUID) {
         performEdit { try $0.removeEffect(effectID, from: clipID) }
+    }
+
+    func applyFilterPreset(_ preset: QuickFilterPreset, to clipID: UUID) {
+        updateClip(clipID) { clip in
+            clip.colorAdjustments = preset.adjustments
+            clip.effects = preset.effects
+        }
+    }
+
+    func copySelectedClipProperties() {
+        guard let selectedClip else { return }
+        copiedClipProperties = ClipPropertyBundle(clip: selectedClip)
+        canPasteClipProperties = true
+    }
+
+    func pasteClipProperties() {
+        guard let copiedClipProperties, !selectedClipIDs.isEmpty else { return }
+        performEdit { try $0.pasteProperties(copiedClipProperties, to: selectedClipIDs) }
     }
 
     func setTransition(_ kind: TransitionKind?, edge: TransitionEdge, for clipID: UUID) {
@@ -856,6 +900,7 @@ final class EditorState: ObservableObject {
     func cancelExport() async { await exportService.cancel() }
 
     func clearCache() async throws {
+        await compositionBuilder.clearCaches()
         await thumbnailGenerator.clearCache()
         await waveformGenerator.clearCache()
         await inspector.clearCache()
@@ -881,7 +926,11 @@ final class EditorState: ObservableObject {
         }
     }
 
-    func cacheSize() async throws -> Int64 { try await cache.size() }
+    func cacheSize() async throws -> Int64 {
+        let derived = try await cache.size()
+        let media = try await MediaDerivativeStore.shared.size()
+        return derived + media
+    }
     func diagnosticEvents() async -> [DiagnosticEvent] { await LocalDiagnostics.shared.recentEvents() }
 
     private func install(_ project: CineleafProject, url: URL?) {

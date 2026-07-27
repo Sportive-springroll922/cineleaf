@@ -1,6 +1,18 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "clip.properties.copy" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Copy clip properties" } }, "es" : { "stringUnit" : { "state" : "translated", "value" : "Copiar propiedades del clip" } } } },
+    "clip.properties.paste" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Paste clip properties" } }, "es" : { "stringUnit" : { "state" : "translated", "value" : "Pegar propiedades del clip" } } } },
+    "filter.monochrome" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Clean monochrome" } }, "es" : { "stringUnit" : { "state" : "translated", "value" : "Monocromo limpio" } } } },
+    "filter.soft_bloom" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Soft glow" } }, "es" : { "stringUnit" : { "state" : "translated", "value" : "Brillo suave" } } } },
+    "filter.vivid" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Vivid" } }, "es" : { "stringUnit" : { "state" : "translated", "value" : "Vívido" } } } },
+    "filter.warm_film" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Warm film" } }, "es" : { "stringUnit" : { "state" : "translated", "value" : "Película cálida" } } } },
+    "inspector.filter_preset" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Apply quick look" } }, "es" : { "stringUnit" : { "state" : "translated", "value" : "Aplicar estilo rápido" } } } },
+    "export.preset_delete" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete saved preset" } }, "es" : { "stringUnit" : { "state" : "translated", "value" : "Eliminar ajuste guardado" } } } },
+    "export.preset_load" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Use saved preset" } }, "es" : { "stringUnit" : { "state" : "translated", "value" : "Usar ajuste guardado" } } } },
+    "export.preset_name" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Preset name" } }, "es" : { "stringUnit" : { "state" : "translated", "value" : "Nombre del ajuste" } } } },
+    "export.preset_save" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Save settings" } }, "es" : { "stringUnit" : { "state" : "translated", "value" : "Guardar ajustes" } } } },
+    "export.presets" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Saved settings" } }, "es" : { "stringUnit" : { "state" : "translated", "value" : "Ajustes guardados" } } } },
     "error.freeze.create" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "The freeze frame could not be created." } }, "es" : { "stringUnit" : { "state" : "translated", "value" : "No se pudo crear el fotograma congelado." } } } },
     "error.media.consolidate" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "The project media could not be collected. Files already copied were left safely inside the project." } }, "es" : { "stringUnit" : { "state" : "translated", "value" : "No se pudieron reunir los archivos del proyecto. Los ya copiados se han dejado a salvo dentro del proyecto." } } } },
     "error.media.consolidate_save" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Save the project before collecting its media." } }, "es" : { "stringUnit" : { "state" : "translated", "value" : "Guarda el proyecto antes de reunir sus archivos." } } } },
