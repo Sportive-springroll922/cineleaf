@@ -77,11 +77,18 @@ actor AVCompositionBuilder {
                         guard let source = try await sourceAsset.loadTracks(withMediaType: .video).first else {
                             throw CompositionError.missingVideoTrack(media.id)
                         }
+                        let sourceDuration = sourceDuration(for: clip)
                         try destination.insertTimeRange(
-                            CMTimeRange(start: clip.sourceStart.cmTime, duration: clip.duration.cmTime),
+                            CMTimeRange(start: clip.sourceStart.cmTime, duration: sourceDuration.cmTime),
                             of: source,
                             at: clip.timelineStart.cmTime
                         )
+                        if clip.playbackRate != 1 {
+                            destination.scaleTimeRange(
+                                CMTimeRange(start: clip.timelineStart.cmTime, duration: sourceDuration.cmTime),
+                                toDuration: clip.duration.cmTime
+                            )
+                        }
                         let naturalSize = try await source.load(.naturalSize)
                         let preferred = try await source.load(.preferredTransform)
                         configure(layer: layer, clip: clip, sourceSize: naturalSize, preferred: preferred, canvas: project.canvas)
@@ -112,11 +119,18 @@ actor AVCompositionBuilder {
                         if clip.kind == .video { continue }
                         throw CompositionError.missingAudioTrack(media.id)
                     }
+                    let sourceDuration = sourceDuration(for: clip)
                     try destination.insertTimeRange(
-                        CMTimeRange(start: clip.sourceStart.cmTime, duration: clip.duration.cmTime),
+                        CMTimeRange(start: clip.sourceStart.cmTime, duration: sourceDuration.cmTime),
                         of: source,
                         at: clip.timelineStart.cmTime
                     )
+                    if clip.playbackRate != 1 {
+                        destination.scaleTimeRange(
+                            CMTimeRange(start: clip.timelineStart.cmTime, duration: sourceDuration.cmTime),
+                            toDuration: clip.duration.cmTime
+                        )
+                    }
                     configure(parameters: parameters, clip: clip, trackMuted: track.isMuted)
                 }
                 audioParameters.append(parameters)
@@ -160,6 +174,10 @@ actor AVCompositionBuilder {
         )
     }
 
+    private func sourceDuration(for clip: TimelineClip) -> RationalTime {
+        RationalTime(seconds: clip.duration.seconds * clip.playbackRate, preferredTimescale: 60_000)
+    }
+
     private func configure(
         layer: AVMutableVideoCompositionLayerInstruction,
         clip: TimelineClip,
@@ -167,6 +185,71 @@ actor AVCompositionBuilder {
         preferred: CGAffineTransform,
         canvas: Resolution
     ) {
+        let start = clip.timelineStart.cmTime
+        let end = clip.timelineEnd.cmTime
+        let transformTimes = sampledTimes(for: clip, properties: [.positionX, .positionY, .scale, .rotationDegrees])
+        for (from, to) in zip(transformTimes, transformTimes.dropFirst()) {
+            layer.setTransformRamp(
+                fromStart: renderedTransform(
+                    clip: clip, localTime: from, sourceSize: sourceSize, preferred: preferred, canvas: canvas
+                ),
+                toEnd: renderedTransform(
+                    clip: clip, localTime: to, sourceSize: sourceSize, preferred: preferred, canvas: canvas
+                ),
+                timeRange: CMTimeRange(start: start + from.cmTime, duration: (to - from).cmTime)
+            )
+        }
+        let crop = CGRect(
+            x: sourceSize.width * CGFloat(clip.transform.cropLeading),
+            y: sourceSize.height * CGFloat(clip.transform.cropTop),
+            width: sourceSize.width * CGFloat(max(0, 1 - clip.transform.cropLeading - clip.transform.cropTrailing)),
+            height: sourceSize.height * CGFloat(max(0, 1 - clip.transform.cropTop - clip.transform.cropBottom))
+        )
+        layer.setCropRectangle(crop, at: start)
+
+        let opacityTimes = sampledTimes(for: clip, properties: [.opacity])
+        for (from, to) in zip(opacityTimes, opacityTimes.dropFirst()) {
+            layer.setOpacityRamp(
+                fromStartOpacity: Float(videoOpacity(for: clip, at: from)),
+                toEndOpacity: Float(videoOpacity(for: clip, at: to)),
+                timeRange: CMTimeRange(start: start + from.cmTime, duration: (to - from).cmTime)
+            )
+        }
+        layer.setOpacity(0, at: end)
+    }
+
+    private func renderedTransform(
+        clip: TimelineClip,
+        localTime: RationalTime,
+        sourceSize: CGSize,
+        preferred: CGAffineTransform,
+        canvas: Resolution
+    ) -> CGAffineTransform {
+        var transform = clip.transform
+        transform.positionX = keyframedValue(.positionX, clip: clip, time: localTime, fallback: transform.positionX)
+        transform.positionY = keyframedValue(.positionY, clip: clip, time: localTime, fallback: transform.positionY)
+        transform.scale = keyframedValue(.scale, clip: clip, time: localTime, fallback: transform.scale)
+        transform.rotationDegrees = keyframedValue(
+            .rotationDegrees, clip: clip, time: localTime, fallback: transform.rotationDegrees
+        )
+
+        if let transition = clip.transitionIn, localTime < transition.duration {
+            let progress = max(0, min(localTime.seconds / transition.duration.seconds, 1))
+            switch transition.kind {
+            case .slideLeft: transform.positionX += Double(canvas.width) * (1 - progress)
+            case .slideRight: transform.positionX -= Double(canvas.width) * (1 - progress)
+            default: break
+            }
+        }
+        if let transition = clip.transitionOut, localTime > clip.duration - transition.duration {
+            let progress = max(0, min((localTime - (clip.duration - transition.duration)).seconds / transition.duration.seconds, 1))
+            switch transition.kind {
+            case .slideLeft: transform.positionX -= Double(canvas.width) * progress
+            case .slideRight: transform.positionX += Double(canvas.width) * progress
+            default: break
+            }
+        }
+
         let transformedRect = CGRect(origin: .zero, size: sourceSize).applying(preferred)
         var normalized = preferred
         normalized.tx -= transformedRect.minX
@@ -175,8 +258,8 @@ actor AVCompositionBuilder {
         let canvasSize = CGSize(width: CGFloat(canvas.width), height: CGFloat(canvas.height))
         let fitScale = min(canvasSize.width / displaySize.width, canvasSize.height / displaySize.height)
         let fillScale = max(canvasSize.width / displaySize.width, canvasSize.height / displaySize.height)
-        let contentScale = clip.transform.contentMode == .fit ? fitScale : fillScale
-        let scale = contentScale * CGFloat(clip.transform.scale)
+        let contentScale = transform.contentMode == .fit ? fitScale : fillScale
+        let scale = contentScale * CGFloat(transform.scale)
         let scaled = CGSize(width: displaySize.width * scale, height: displaySize.height * scale)
         var result = normalized
             .concatenating(CGAffineTransform(scaleX: scale, y: scale))
@@ -186,40 +269,12 @@ actor AVCompositionBuilder {
             ))
         let center = CGPoint(x: canvasSize.width / 2, y: canvasSize.height / 2)
         let userTransform = CGAffineTransform(translationX: -center.x, y: -center.y)
-            .rotated(by: CGFloat(clip.transform.rotationDegrees) * .pi / 180)
+            .rotated(by: CGFloat(transform.rotationDegrees) * .pi / 180)
             .translatedBy(
-                x: center.x + CGFloat(clip.transform.positionX),
-                y: center.y + CGFloat(clip.transform.positionY)
+                x: center.x + CGFloat(transform.positionX),
+                y: center.y + CGFloat(transform.positionY)
             )
-        result = result.concatenating(userTransform)
-
-        let start = clip.timelineStart.cmTime
-        let end = clip.timelineEnd.cmTime
-        layer.setTransform(result, at: start)
-        let crop = CGRect(
-            x: sourceSize.width * CGFloat(clip.transform.cropLeading),
-            y: sourceSize.height * CGFloat(clip.transform.cropTop),
-            width: sourceSize.width * CGFloat(max(0, 1 - clip.transform.cropLeading - clip.transform.cropTrailing)),
-            height: sourceSize.height * CGFloat(max(0, 1 - clip.transform.cropTop - clip.transform.cropBottom))
-        )
-        layer.setCropRectangle(crop, at: start)
-        layer.setOpacity(0, at: end)
-        if clip.fades.videoIn > .zero {
-            layer.setOpacityRamp(
-                fromStartOpacity: 0,
-                toEndOpacity: Float(clip.opacity),
-                timeRange: CMTimeRange(start: start, duration: clip.fades.videoIn.cmTime)
-            )
-        } else {
-            layer.setOpacity(Float(clip.opacity), at: start)
-        }
-        if clip.fades.videoOut > .zero {
-            layer.setOpacityRamp(
-                fromStartOpacity: Float(clip.opacity),
-                toEndOpacity: 0,
-                timeRange: CMTimeRange(start: end - clip.fades.videoOut.cmTime, duration: clip.fades.videoOut.cmTime)
-            )
-        }
+        return result.concatenating(userTransform)
     }
 
     private func configure(
@@ -227,26 +282,79 @@ actor AVCompositionBuilder {
         clip: TimelineClip,
         trackMuted: Bool
     ) {
-        let volume = trackMuted ? Float(0) : Float(min(clip.audioVolume, 1))
         let start = clip.timelineStart.cmTime
         let end = clip.timelineEnd.cmTime
-        if clip.fades.audioIn > .zero {
+        let volumeTimes = sampledTimes(for: clip, properties: [.volume])
+        for (from, to) in zip(volumeTimes, volumeTimes.dropFirst()) {
             parameters.setVolumeRamp(
-                fromStartVolume: 0,
-                toEndVolume: volume,
-                timeRange: CMTimeRange(start: start, duration: clip.fades.audioIn.cmTime)
-            )
-        } else {
-            parameters.setVolume(volume, at: start)
-        }
-        if clip.fades.audioOut > .zero {
-            parameters.setVolumeRamp(
-                fromStartVolume: volume,
-                toEndVolume: 0,
-                timeRange: CMTimeRange(start: end - clip.fades.audioOut.cmTime, duration: clip.fades.audioOut.cmTime)
+                fromStartVolume: Float(audioVolume(for: clip, at: from, trackMuted: trackMuted)),
+                toEndVolume: Float(audioVolume(for: clip, at: to, trackMuted: trackMuted)),
+                timeRange: CMTimeRange(start: start + from.cmTime, duration: (to - from).cmTime)
             )
         }
         parameters.setVolume(0, at: end)
+    }
+
+    private func sampledTimes(for clip: TimelineClip, properties: [KeyframedProperty]) -> [RationalTime] {
+        var significant = Set([RationalTime.zero, clip.duration])
+        properties.forEach { significant.formUnion(clip.keyframes[$0].map(\.time)) }
+        significant.formUnion([clip.fades.videoIn, clip.duration - clip.fades.videoOut])
+        significant.formUnion([clip.fades.audioIn, clip.duration - clip.fades.audioOut])
+        if let transition = clip.transitionIn { significant.insert(transition.duration) }
+        if let transition = clip.transitionOut { significant.insert(clip.duration - transition.duration) }
+        let ordered = significant.filter { $0 >= .zero && $0 <= clip.duration }.sorted()
+        var sampled = Set(ordered)
+        for (start, end) in zip(ordered, ordered.dropFirst()) where end > start {
+            for index in 1..<4 {
+                sampled.insert(RationalTime(
+                    seconds: start.seconds + (end - start).seconds * Double(index) / 4,
+                    preferredTimescale: 60_000
+                ))
+            }
+        }
+        return sampled.sorted()
+    }
+
+    private func keyframedValue(
+        _ property: KeyframedProperty,
+        clip: TimelineClip,
+        time: RationalTime,
+        fallback: Double
+    ) -> Double {
+        KeyframeInterpolator.value(at: time, keyframes: clip.keyframes[property]) ?? fallback
+    }
+
+    private func videoOpacity(for clip: TimelineClip, at time: RationalTime) -> Double {
+        var value = keyframedValue(.opacity, clip: clip, time: time, fallback: clip.opacity)
+        if clip.fades.videoIn > .zero, time < clip.fades.videoIn {
+            value *= max(0, time.seconds / clip.fades.videoIn.seconds)
+        }
+        if clip.fades.videoOut > .zero, time > clip.duration - clip.fades.videoOut {
+            value *= max(0, (clip.duration - time).seconds / clip.fades.videoOut.seconds)
+        }
+        if let transition = clip.transitionIn,
+           [.crossDissolve, .fadeThroughBlack, .blur].contains(transition.kind),
+           time < transition.duration {
+            value *= max(0, time.seconds / transition.duration.seconds)
+        }
+        if let transition = clip.transitionOut,
+           [.crossDissolve, .fadeThroughBlack, .blur].contains(transition.kind),
+           time > clip.duration - transition.duration {
+            value *= max(0, (clip.duration - time).seconds / transition.duration.seconds)
+        }
+        return min(max(value, 0), 1)
+    }
+
+    private func audioVolume(for clip: TimelineClip, at time: RationalTime, trackMuted: Bool) -> Double {
+        guard !trackMuted else { return 0 }
+        var value = keyframedValue(.volume, clip: clip, time: time, fallback: clip.audioVolume)
+        if clip.fades.audioIn > .zero, time < clip.fades.audioIn {
+            value *= max(0, time.seconds / clip.fades.audioIn.seconds)
+        }
+        if clip.fades.audioOut > .zero, time > clip.duration - clip.fades.audioOut {
+            value *= max(0, (clip.duration - time).seconds / clip.fades.audioOut.seconds)
+        }
+        return min(max(value, 0), 2)
     }
 
     private func animationTool(

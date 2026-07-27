@@ -128,4 +128,38 @@ final class MediaPipelineIntegrationTests: XCTestCase {
             // Expected.
         }
     }
+
+    func testPlaybackRateScalesCompositionWithoutChangingTimelineDuration() async throws {
+        let videoURL = temporaryDirectory.appendingPathComponent("speed.mov")
+        try await SyntheticMediaFactory.makeVideo(at: videoURL, seconds: 2)
+        let asset = MediaAsset(
+            displayName: "speed.mov",
+            kind: .video,
+            reference: MediaReference(lastKnownPath: videoURL.path),
+            metadata: MediaMetadata(
+                duration: RationalTime(value: 2, timescale: 1),
+                resolution: Resolution(width: 320, height: 180),
+                frameRate: RationalRate(numerator: 30),
+                fileType: "mov",
+                hasAudio: false,
+                fileSize: 1
+            )
+        )
+        var project = CineleafProject(name: "Speed", assets: [asset])
+        project.timeline.tracks[0].clips = [TimelineClip(
+            name: asset.displayName,
+            kind: .video,
+            assetID: asset.id,
+            timelineStart: .zero,
+            duration: RationalTime(value: 1, timescale: 1),
+            playbackRate: 2
+        )]
+
+        let access = MediaAccessManager()
+        let rendered = try await AVCompositionBuilder(accessManager: access).build(project: project)
+
+        XCTAssertEqual(rendered.composition.duration.seconds, 1, accuracy: 0.02)
+        XCTAssertEqual(rendered.duration.seconds, 1, accuracy: 0.001)
+        await access.releaseAll()
+    }
 }
