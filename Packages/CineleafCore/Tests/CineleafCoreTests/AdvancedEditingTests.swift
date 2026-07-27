@@ -109,6 +109,60 @@ final class AdvancedEditingTests: XCTestCase {
         XCTAssertEqual(srtCues[0].start.seconds, 1.25, accuracy: 0.001)
         XCTAssertEqual(srtCues[0].text, "Hello world")
         XCTAssertEqual(try XCTUnwrap(vttCues.first).duration.seconds, 1.5, accuracy: 0.001)
+        XCTAssertTrue(SubtitleParser.serialize(srtCues, format: .webVTT).hasPrefix("WEBVTT"))
+    }
+
+    func testInsertEditShiftsLaterClips() throws {
+        let fixture = threeClipProject()
+        var editor = try ProjectEditor(project: fixture.project)
+        let inserted = TimelineClip(
+            name: "Title",
+            kind: .text,
+            timelineStart: .zero,
+            duration: RationalTime(value: 2, timescale: 1),
+            textStyle: TextStyle(text: "Title")
+        )
+
+        try editor.insertEdit(inserted, into: fixture.project.timeline.tracks[0].id, at: RationalTime(value: 10, timescale: 1))
+
+        let clips = editor.project.timeline.tracks[0].clips
+        XCTAssertEqual(clips.first(where: { $0.id == inserted.id })?.timelineStart, RationalTime(value: 10, timescale: 1))
+        XCTAssertEqual(clips.first(where: { $0.id == fixture.clips[1].id })?.timelineStart, RationalTime(value: 12, timescale: 1))
+        XCTAssertEqual(clips.first(where: { $0.id == fixture.clips[2].id })?.timelineStart, RationalTime(value: 22, timescale: 1))
+    }
+
+    func testOverwriteEditPreservesNonOverwrittenSides() throws {
+        let fixture = threeClipProject()
+        var editor = try ProjectEditor(project: fixture.project)
+        let replacement = TimelineClip(
+            name: "Replacement",
+            kind: .text,
+            timelineStart: .zero,
+            duration: RationalTime(value: 4, timescale: 1),
+            textStyle: TextStyle(text: "Replacement")
+        )
+
+        try editor.overwriteEdit(replacement, into: fixture.project.timeline.tracks[0].id, at: RationalTime(value: 8, timescale: 1))
+
+        let clips = editor.project.timeline.tracks[0].clips
+        XCTAssertEqual(clips.first(where: { $0.id == fixture.clips[0].id })?.duration, RationalTime(value: 8, timescale: 1))
+        XCTAssertEqual(clips.first(where: { $0.id == replacement.id })?.timelineStart, RationalTime(value: 8, timescale: 1))
+        let rightRemainder = try XCTUnwrap(clips.first(where: { $0.name == fixture.clips[1].name && $0.id != fixture.clips[1].id }))
+        XCTAssertEqual(rightRemainder.timelineStart, RationalTime(value: 12, timescale: 1))
+        XCTAssertEqual(rightRemainder.duration, RationalTime(value: 8, timescale: 1))
+        XCTAssertEqual(rightRemainder.sourceStart, RationalTime(value: 12, timescale: 1))
+    }
+
+    func testMovingGroupedClipsPreservesTheirOffsets() throws {
+        let fixture = threeClipProject()
+        var editor = try ProjectEditor(project: fixture.project)
+        _ = try editor.groupClips(Set(fixture.clips.suffix(2).map(\.id)))
+
+        try editor.moveClip(fixture.clips[1].id, to: RationalTime(value: 12, timescale: 1))
+
+        let clips = editor.project.timeline.tracks[0].clips
+        XCTAssertEqual(clips.first(where: { $0.id == fixture.clips[1].id })?.timelineStart, RationalTime(value: 12, timescale: 1))
+        XCTAssertEqual(clips.first(where: { $0.id == fixture.clips[2].id })?.timelineStart, RationalTime(value: 22, timescale: 1))
     }
 
     private func threeClipProject() -> (project: CineleafProject, clips: [TimelineClip]) {

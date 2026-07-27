@@ -91,6 +91,33 @@ public struct ProjectEditor: Sendable {
         let sourceTrack = draft.timeline.tracks[source.track]
         guard !sourceTrack.isLocked else { throw EditingError.trackLocked(sourceTrack.id) }
         var clip = sourceTrack.clips[source.clip]
+
+        let allClips = draft.timeline.tracks.flatMap(\.clips)
+        let companionIDs = Set(allClips.filter { candidate in
+            candidate.id == clip.id
+                || (clip.groupID != nil && candidate.groupID == clip.groupID)
+                || (clip.linkGroupID != nil && candidate.linkGroupID == clip.linkGroupID)
+        }.map(\.id))
+        if companionIDs.count > 1 {
+            guard trackID == nil || trackID == sourceTrack.id else { throw EditingError.invalidEdit }
+            let delta = start - clip.timelineStart
+            for trackIndex in draft.timeline.tracks.indices {
+                let affected = draft.timeline.tracks[trackIndex].clips.contains { companionIDs.contains($0.id) }
+                if affected && draft.timeline.tracks[trackIndex].isLocked {
+                    throw EditingError.trackLocked(draft.timeline.tracks[trackIndex].id)
+                }
+                for clipIndex in draft.timeline.tracks[trackIndex].clips.indices
+                    where companionIDs.contains(draft.timeline.tracks[trackIndex].clips[clipIndex].id) {
+                    let newStart = draft.timeline.tracks[trackIndex].clips[clipIndex].timelineStart + delta
+                    guard newStart >= .zero else { throw EditingError.invalidEdit }
+                    draft.timeline.tracks[trackIndex].clips[clipIndex].timelineStart = newStart
+                }
+                draft.timeline.tracks[trackIndex].clips.sort { $0.timelineStart < $1.timelineStart }
+            }
+            try commit(draft)
+            return
+        }
+
         draft.timeline.tracks[source.track].clips.remove(at: source.clip)
 
         let destinationID = trackID ?? sourceTrack.id
@@ -164,12 +191,18 @@ public struct ProjectEditor: Sendable {
 
     public mutating func deleteClips(_ clipIDs: Set<UUID>) throws {
         var draft = project
+        let selected = draft.timeline.tracks.flatMap(\.clips).filter { clipIDs.contains($0.id) }
+        let groupIDs = Set(selected.compactMap(\.groupID))
+        let linkIDs = Set(selected.compactMap(\.linkGroupID))
+        let expandedIDs = clipIDs.union(draft.timeline.tracks.flatMap(\.clips).filter { clip in
+            (clip.groupID.map(groupIDs.contains) ?? false) || (clip.linkGroupID.map(linkIDs.contains) ?? false)
+        }.map(\.id))
         for index in draft.timeline.tracks.indices {
-            let affected = draft.timeline.tracks[index].clips.contains { clipIDs.contains($0.id) }
+            let affected = draft.timeline.tracks[index].clips.contains { expandedIDs.contains($0.id) }
             if affected && draft.timeline.tracks[index].isLocked {
                 throw EditingError.trackLocked(draft.timeline.tracks[index].id)
             }
-            draft.timeline.tracks[index].clips.removeAll { clipIDs.contains($0.id) }
+            draft.timeline.tracks[index].clips.removeAll { expandedIDs.contains($0.id) }
         }
         try commit(draft)
     }

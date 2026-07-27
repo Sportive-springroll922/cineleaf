@@ -21,6 +21,72 @@ public struct ClipPropertyBundle: Codable, Hashable, Sendable {
 }
 
 public extension ProjectEditor {
+    mutating func insertEdit(_ clip: TimelineClip, into trackID: UUID, at time: RationalTime) throws {
+        guard time >= .zero else { throw EditingError.invalidEdit }
+        var draft = project
+        let trackIndex = try editableTrackIndex(trackID, in: draft)
+        guard clip.kind.compatibleTrack == draft.timeline.tracks[trackIndex].kind else { throw EditingError.invalidEdit }
+        var inserted = clip
+        inserted.timelineStart = time
+        var edited: [TimelineClip] = []
+        for existing in draft.timeline.tracks[trackIndex].clips {
+            if existing.timelineStart >= time {
+                var shifted = existing
+                shifted.timelineStart = shifted.timelineStart + inserted.duration
+                edited.append(shifted)
+            } else if existing.timelineEnd > time {
+                let leftDuration = time - existing.timelineStart
+                let rightDuration = existing.timelineEnd - time
+                edited.append(Self.segment(of: existing, offset: .zero, duration: leftDuration, preserveID: true))
+                var right = Self.segment(of: existing, offset: leftDuration, duration: rightDuration, preserveID: false)
+                right.timelineStart = time + inserted.duration
+                edited.append(right)
+            } else {
+                edited.append(existing)
+            }
+        }
+        edited.append(inserted)
+        draft.timeline.tracks[trackIndex].clips = edited.sorted { $0.timelineStart < $1.timelineStart }
+        try commit(draft)
+    }
+
+    mutating func overwriteEdit(_ clip: TimelineClip, into trackID: UUID, at time: RationalTime) throws {
+        guard time >= .zero else { throw EditingError.invalidEdit }
+        var draft = project
+        let trackIndex = try editableTrackIndex(trackID, in: draft)
+        guard clip.kind.compatibleTrack == draft.timeline.tracks[trackIndex].kind else { throw EditingError.invalidEdit }
+        var inserted = clip
+        inserted.timelineStart = time
+        let overwriteRange = RationalTimeRange(start: time, duration: inserted.duration)
+        var edited: [TimelineClip] = []
+        for existing in draft.timeline.tracks[trackIndex].clips {
+            guard existing.timeRange.intersects(overwriteRange) else {
+                edited.append(existing)
+                continue
+            }
+            if existing.timelineStart < overwriteRange.start {
+                edited.append(Self.segment(
+                    of: existing,
+                    offset: .zero,
+                    duration: overwriteRange.start - existing.timelineStart,
+                    preserveID: true
+                ))
+            }
+            if existing.timelineEnd > overwriteRange.end {
+                let offset = overwriteRange.end - existing.timelineStart
+                edited.append(Self.segment(
+                    of: existing,
+                    offset: offset,
+                    duration: existing.timelineEnd - overwriteRange.end,
+                    preserveID: false
+                ))
+            }
+        }
+        edited.append(inserted)
+        draft.timeline.tracks[trackIndex].clips = edited.sorted { $0.timelineStart < $1.timelineStart }
+        try commit(draft)
+    }
+
     mutating func rippleDelete(_ clipIDs: Set<UUID>) throws {
         guard !clipIDs.isEmpty else { return }
         var draft = project
@@ -250,5 +316,37 @@ public extension ProjectEditor {
             videoIn: min(fades.videoIn, half), videoOut: min(fades.videoOut, half),
             audioIn: min(fades.audioIn, half), audioOut: min(fades.audioOut, half)
         )
+    }
+
+    private static func segment(
+        of original: TimelineClip,
+        offset: RationalTime,
+        duration: RationalTime,
+        preserveID: Bool
+    ) -> TimelineClip {
+        var segment = original
+        if !preserveID { segment.id = UUID() }
+        segment.timelineStart = original.timelineStart + offset
+        segment.duration = duration
+        if original.kind != .text && original.kind != .image {
+            if original.isReversed {
+                let trailingDuration = original.duration - offset - duration
+                segment.sourceStart = original.sourceStart + scaled(trailingDuration, by: original.playbackRate)
+            } else {
+                segment.sourceStart = original.sourceStart + scaled(offset, by: original.playbackRate)
+            }
+        }
+        if offset > .zero { segment.transitionIn = nil }
+        if offset + duration < original.duration { segment.transitionOut = nil }
+        segment.fades = clampedFadesForAdvancedEditing(segment.fades, duration: duration)
+        for property in KeyframedProperty.allCases {
+            segment.keyframes[property] = original.keyframes[property].compactMap { frame in
+                guard frame.time >= offset, frame.time <= offset + duration else { return nil }
+                var rebased = frame
+                rebased.time = frame.time - offset
+                return rebased
+            }
+        }
+        return segment
     }
 }
