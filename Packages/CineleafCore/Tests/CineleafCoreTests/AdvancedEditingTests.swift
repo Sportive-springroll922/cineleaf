@@ -165,6 +165,21 @@ final class AdvancedEditingTests: XCTestCase {
         XCTAssertEqual(clips.first(where: { $0.id == fixture.clips[2].id })?.timelineStart, RationalTime(value: 22, timescale: 1))
     }
 
+    func testAutomaticCaptionBuilderCreatesReadableTimedCues() {
+        let tokens = [
+            TranscriptToken(text: "Hello", start: .zero, duration: RationalTime(value: 1, timescale: 2)),
+            TranscriptToken(text: "world.", start: RationalTime(value: 1, timescale: 2), duration: RationalTime(value: 1, timescale: 2)),
+            TranscriptToken(text: "This", start: RationalTime(value: 2, timescale: 1), duration: RationalTime(value: 1, timescale: 2)),
+            TranscriptToken(text: "continues", start: RationalTime(value: 5, timescale: 2), duration: RationalTime(value: 1, timescale: 2))
+        ]
+
+        let cues = AutomaticCaptionBuilder.cues(from: tokens, maximumCharacters: 20, maximumDuration: 3)
+
+        XCTAssertEqual(cues.map(\.text), ["Hello world.", "This continues"])
+        XCTAssertEqual(cues[0].duration, RationalTime(value: 1, timescale: 1))
+        XCTAssertEqual(cues[1].start, RationalTime(value: 2, timescale: 1))
+    }
+
     private func threeClipProject() -> (project: CineleafProject, clips: [TimelineClip]) {
         let asset = TestFixtures.asset(duration: RationalTime(value: 30, timescale: 1))
         var project = CineleafProject(name: "Advanced", assets: [asset])

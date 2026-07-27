@@ -21,6 +21,7 @@ final class EditorState: ObservableObject {
     @Published private(set) var isDirty = false
     @Published private(set) var isImporting = false
     @Published private(set) var isBuildingPreview = false
+    @Published private(set) var isGeneratingCaptions = false
     @Published private(set) var waveforms: [UUID: [Float]] = [:]
     @Published private(set) var mediaAvailability: [UUID: MediaAvailability] = [:]
     @Published var presentedError: PresentedError?
@@ -42,6 +43,7 @@ final class EditorState: ObservableObject {
     private let waveformGenerator = AVWaveformGenerator()
     private lazy var compositionBuilder = AVCompositionBuilder(accessManager: accessManager)
     private let exportService = AVExportService()
+    private let transcriptionService = OnDeviceTranscriptionService()
     private var autosaveTask: Task<Void, Never>?
     private var previewTask: Task<Void, Never>?
     private var waveformTasks: [UUID: Task<Void, Never>] = [:]
@@ -359,6 +361,67 @@ final class EditorState: ObservableObject {
         if let detached { selectedClipIDs = [detached] }
     }
 
+    func generateAutomaticCaptions(for assetID: UUID) async {
+        guard let project, let asset = project.assets.first(where: { $0.id == assetID }), asset.metadata.hasAudio else {
+            present(TranscriptionError.noSpeechDetected, messageKey: "error.captions.no_audio")
+            return
+        }
+        isGeneratingCaptions = true
+        defer { isGeneratingCaptions = false }
+        do {
+            let url = try await accessManager.resolve(asset.reference)
+            let sourceCues = try await transcriptionService.transcribe(url: url)
+            let cues = mappedCaptions(sourceCues, assetID: assetID, in: project)
+            var newIDs: [UUID] = []
+            performEdit { editor in
+                let trackID = try editor.addTrack(
+                    name: String(localized: "captions.track_name"),
+                    kind: .video,
+                    at: 0
+                )
+                newIDs = try editor.addSubtitles(cues, to: trackID)
+            }
+            selectedClipIDs = Set(newIDs)
+        } catch {
+            present(error, messageKey: "error.captions.automatic")
+        }
+    }
+
+    func importSubtitles(_ url: URL, format: SubtitleFormat) async {
+        do {
+            let cues = try await Task.detached(priority: .userInitiated) {
+                let contents = try String(contentsOf: url, encoding: .utf8)
+                return try SubtitleParser.parse(contents, format: format)
+            }.value
+            var newIDs: [UUID] = []
+            performEdit { editor in
+                let trackID = try editor.addTrack(name: String(localized: "captions.track_name"), kind: .video, at: 0)
+                newIDs = try editor.addSubtitles(cues, to: trackID)
+            }
+            selectedClipIDs = Set(newIDs)
+        } catch {
+            present(error, messageKey: "error.captions.import")
+        }
+    }
+
+    func exportSubtitles(to url: URL, format: SubtitleFormat) async {
+        guard let project else { return }
+        let cues = project.timeline.tracks.flatMap(\.clips)
+            .filter { $0.role == .subtitle }
+            .compactMap { clip -> SubtitleCue? in
+                guard let text = clip.textStyle?.text else { return nil }
+                return SubtitleCue(start: clip.timelineStart, duration: clip.duration, text: text)
+            }
+        do {
+            let contents = SubtitleParser.serialize(cues, format: format)
+            try await Task.detached(priority: .utility) {
+                try contents.write(to: url, atomically: true, encoding: .utf8)
+            }.value
+        } catch {
+            present(error, messageKey: "error.captions.export")
+        }
+    }
+
     func setTrackMuted(_ id: UUID, muted: Bool) {
         performEdit { try $0.setTrackMuted(id, muted: muted) }
     }
@@ -490,6 +553,43 @@ final class EditorState: ObservableObject {
             schedulePreviewRebuild()
         } catch {
             present(error, messageKey: "error.history.restore")
+        }
+    }
+
+    private func mappedCaptions(
+        _ sourceCues: [SubtitleCue],
+        assetID: UUID,
+        in project: CineleafProject
+    ) -> [SubtitleCue] {
+        guard let clip = project.timeline.tracks.flatMap(\.clips).first(where: { $0.assetID == assetID }),
+              !clip.isReversed else {
+            return sourceCues.map { cue in
+                SubtitleCue(
+                    start: playback.currentTime + cue.start,
+                    duration: cue.duration,
+                    text: cue.text
+                )
+            }
+        }
+        let sourceEnd = clip.sourceStart + RationalTime(
+            seconds: clip.duration.seconds * clip.playbackRate,
+            preferredTimescale: 60_000
+        )
+        return sourceCues.compactMap { cue in
+            guard cue.start + cue.duration > clip.sourceStart, cue.start < sourceEnd else { return nil }
+            let startOffset = max(cue.start, clip.sourceStart) - clip.sourceStart
+            let endOffset = min(cue.start + cue.duration, sourceEnd) - clip.sourceStart
+            return SubtitleCue(
+                start: clip.timelineStart + RationalTime(
+                    seconds: startOffset.seconds / clip.playbackRate,
+                    preferredTimescale: 60_000
+                ),
+                duration: RationalTime(
+                    seconds: (endOffset - startOffset).seconds / clip.playbackRate,
+                    preferredTimescale: 60_000
+                ),
+                text: cue.text
+            )
         }
     }
 

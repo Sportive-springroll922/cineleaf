@@ -6,8 +6,15 @@ import UniformTypeIdentifiers
 private enum SidebarSection: String, CaseIterable, Identifiable {
     case media
     case text
+    case captions
     var id: String { rawValue }
-    var key: LocalizedStringKey { self == .media ? "sidebar.media" : "sidebar.text" }
+    var key: LocalizedStringKey {
+        switch self {
+        case .media: "sidebar.media"
+        case .text: "sidebar.text"
+        case .captions: "sidebar.captions"
+        }
+    }
 }
 
 struct SidebarView: View {
@@ -32,6 +39,8 @@ struct SidebarView: View {
                 mediaLibrary
             case .text:
                 textLibrary
+            case .captions:
+                captionsLibrary
             }
         }
         .background(Color(nsColor: .controlBackgroundColor))
@@ -103,6 +112,39 @@ struct SidebarView: View {
         }
     }
 
+    private var captionsLibrary: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Label("captions.private_title", systemImage: "captions.bubble")
+                .font(.headline)
+            Text("captions.private_message")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            Button {
+                guard let assetID = state.selectedAssetID else { return }
+                Task { await state.generateAutomaticCaptions(for: assetID) }
+            } label: {
+                if state.isGeneratingCaptions {
+                    ProgressView().controlSize(.small)
+                    Text("captions.generating")
+                } else {
+                    Label("captions.automatic", systemImage: "waveform.badge.magnifyingglass")
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(state.selectedAssetID == nil || state.isGeneratingCaptions)
+            Text("captions.select_audio_hint")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+
+            Divider()
+            Button("captions.import") { importSubtitlePanel() }
+            Button("captions.export") { exportSubtitlePanel() }
+                .disabled(state.project?.timeline.tracks.flatMap(\.clips).contains(where: { $0.role == .subtitle }) != true)
+            Spacer()
+        }
+        .padding(14)
+    }
+
     private func importPanel() {
         let panel = NSOpenPanel()
         panel.title = String(localized: "media.import")
@@ -118,6 +160,24 @@ struct SidebarView: View {
         panel.allowedContentTypes = [.movie, .audio, .image]
         guard panel.runModal() == .OK, let url = panel.url else { return }
         Task { await state.relink(assetID: asset.id, to: url) }
+    }
+
+    private func importSubtitlePanel() {
+        let panel = NSOpenPanel()
+        panel.title = String(localized: "captions.import")
+        panel.allowedContentTypes = ["srt", "vtt"].compactMap { UTType(filenameExtension: $0) }
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        let format: SubtitleFormat = url.pathExtension.lowercased() == "vtt" ? .webVTT : .srt
+        Task { await state.importSubtitles(url, format: format) }
+    }
+
+    private func exportSubtitlePanel() {
+        let panel = NSSavePanel()
+        panel.title = String(localized: "captions.export")
+        panel.nameFieldStringValue = "captions.srt"
+        panel.allowedContentTypes = [UTType(filenameExtension: "srt")].compactMap { $0 }
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        Task { await state.exportSubtitles(to: url, format: .srt) }
     }
 }
 

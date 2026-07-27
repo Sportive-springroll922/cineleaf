@@ -41,6 +41,10 @@
     <string>$(MACOSX_DEPLOYMENT_TARGET)</string>
     <key>NSHighResolutionCapable</key>
     <true/>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>Cineleaf uses on-device speech recognition to create editable captions. Audio never leaves your Mac.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Cineleaf uses the microphone only when you choose to record a voiceover.</string>
     <key>NSHumanReadableCopyright</key>
     <string>Copyright © 2026 Cineleaf contributors. MIT License.</string>
     <key>UTExportedTypeDeclarations</key>

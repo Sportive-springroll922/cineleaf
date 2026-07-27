@@ -287,7 +287,7 @@ actor AVCompositionBuilder {
         let contentScale = transform.contentMode == .fit ? fitScale : fillScale
         let scale = contentScale * CGFloat(transform.scale)
         let scaled = CGSize(width: displaySize.width * scale, height: displaySize.height * scale)
-        var result = normalized
+        let result = normalized
             .concatenating(CGAffineTransform(scaleX: scale, y: scale))
             .concatenating(CGAffineTransform(
                 translationX: (canvasSize.width - scaled.width) / 2,
