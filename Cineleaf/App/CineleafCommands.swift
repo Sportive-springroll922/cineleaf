@@ -67,6 +67,22 @@ struct CineleafCommands: Commands {
             Button("timeline.delete") { state.deleteSelection() }
                 .keyboardShortcut(.delete, modifiers: [])
                 .disabled(state.selectedClipIDs.isEmpty)
+            Button("timeline.ripple_delete") { state.rippleDeleteSelection() }
+                .keyboardShortcut(.delete, modifiers: .shift)
+                .disabled(state.selectedClipIDs.isEmpty)
+            Divider()
+            Button("timeline.group") { state.groupSelection() }
+                .keyboardShortcut("g", modifiers: .command)
+                .disabled(state.selectedClipIDs.count < 2)
+            Button("timeline.ungroup") { state.ungroupSelection() }
+                .keyboardShortcut("g", modifiers: [.command, .shift])
+                .disabled(state.selectedClipIDs.isEmpty)
+            Button("timeline.link") { state.linkSelection() }
+                .keyboardShortcut("l", modifiers: [.command, .option])
+                .disabled(state.selectedClipIDs.count < 2)
+            Button("timeline.add_marker") { state.addMarker() }
+                .keyboardShortcut("m", modifiers: [])
+                .disabled(state.project == nil)
             Divider()
             Button("timeline.zoom_in") { state.zoomIn() }
                 .keyboardShortcut("+", modifiers: .command)

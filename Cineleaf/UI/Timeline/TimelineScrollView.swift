@@ -72,7 +72,13 @@ final class TimelineDrawingView: NSView {
     static let rulerHeight: CGFloat = 28
     static let trackHeight: CGFloat = 54
     weak var coordinator: TimelineScrollView.Coordinator?
-    var project = CineleafProject(name: "")
+    var project = CineleafProject(name: "") {
+        didSet {
+            if oldValue.modifiedAt != project.modifiedAt || oldValue.id != project.id {
+                timelineIndex = TimelineIndex(timeline: project.timeline)
+            }
+        }
+    }
     var selectedClipIDs: Set<UUID> = []
     var pixelsPerSecond = 80.0
     var playhead = RationalTime.zero
@@ -99,6 +105,7 @@ final class TimelineDrawingView: NSView {
     }
 
     private var interaction: Interaction?
+    private var timelineIndex = TimelineIndex(timeline: Timeline())
 
     override var isFlipped: Bool { true }
     override var acceptsFirstResponder: Bool { true }
@@ -121,6 +128,7 @@ final class TimelineDrawingView: NSView {
         NSColor.windowBackgroundColor.setFill()
         NSBezierPath(rect: visible).fill()
         drawRuler(in: visible)
+        drawMarkers(in: visible)
         for (index, track) in project.timeline.tracks.enumerated() {
             drawTrack(track, index: index, visible: visible)
         }
@@ -272,7 +280,14 @@ final class TimelineDrawingView: NSView {
         separator.stroke()
 
         let preload = visible.insetBy(dx: -200, dy: 0)
-        for clip in track.clips {
+        let visibleRange = RationalTimeRange(
+            start: time(at: preload.minX),
+            duration: RationalTime(
+                seconds: max(Double(preload.width) / pixelsPerSecond, 0.001),
+                preferredTimescale: 6_000
+            )
+        )
+        for clip in timelineIndex.clips(in: visibleRange, trackID: track.id) {
             var displayed = clip
             if let interaction, interaction.clipID == clip.id {
                 switch interaction.mode {
@@ -330,6 +345,20 @@ final class TimelineDrawingView: NSView {
         if let assetID = clip.assetID, let peaks = waveforms[assetID], !peaks.isEmpty {
             drawWaveform(peaks, in: rect.insetBy(dx: 5, dy: 16))
         }
+        let badges = [
+            clip.playbackRate != 1 ? "\(clip.playbackRate.formatted(.number.precision(.fractionLength(0...2))))×" : nil,
+            clip.isReversed ? "↶" : nil,
+            !clip.effects.isEmpty || clip.colorAdjustments != .neutral ? "FX" : nil,
+            clip.role == .subtitle ? "CC" : nil,
+            clip.groupID != nil ? "◇" : nil,
+            clip.linkGroupID != nil ? "⌁" : nil
+        ].compactMap { $0 }.joined(separator: " ")
+        if !badges.isEmpty, rect.width > 55 {
+            badges.draw(at: CGPoint(x: rect.minX + 7, y: rect.maxY - 16), withAttributes: [
+                .font: NSFont.systemFont(ofSize: 8, weight: .semibold),
+                .foregroundColor: NSColor.white.withAlphaComponent(0.75)
+            ])
+        }
     }
 
     private func drawWaveform(_ peaks: [Float], in rect: CGRect) {
@@ -358,6 +387,26 @@ final class TimelineDrawingView: NSView {
         path.stroke()
         NSColor.systemRed.setFill()
         NSBezierPath(ovalIn: CGRect(x: x - 4, y: Self.rulerHeight - 6, width: 8, height: 8)).fill()
+    }
+
+    private func drawMarkers(in visible: CGRect) {
+        for marker in project.timeline.markers {
+            let x = xPosition(marker.time.seconds)
+            guard x >= visible.minX, x <= visible.maxX else { continue }
+            NSColor.systemYellow.withAlphaComponent(0.75).setStroke()
+            let line = NSBezierPath()
+            line.move(to: CGPoint(x: x, y: Self.rulerHeight - 9))
+            line.line(to: CGPoint(x: x, y: bounds.maxY))
+            line.stroke()
+            NSColor.systemYellow.setFill()
+            let diamond = NSBezierPath()
+            diamond.move(to: CGPoint(x: x, y: Self.rulerHeight - 9))
+            diamond.line(to: CGPoint(x: x + 5, y: Self.rulerHeight - 4))
+            diamond.line(to: CGPoint(x: x, y: Self.rulerHeight + 1))
+            diamond.line(to: CGPoint(x: x - 5, y: Self.rulerHeight - 4))
+            diamond.close()
+            diamond.fill()
+        }
     }
 
     private func drawPinnedHeaders(visible: CGRect) {
@@ -402,7 +451,15 @@ final class TimelineDrawingView: NSView {
 
     private func hitClip(at point: CGPoint) -> (clip: TimelineClip, trackIndex: Int)? {
         guard let index = trackIndex(at: point) else { return nil }
-        for clip in project.timeline.tracks[index].clips.reversed() where clipRect(clip, trackIndex: index).contains(point) {
+        let hitTime = time(at: point.x)
+        let hitRange = RationalTimeRange(
+            start: hitTime,
+            duration: RationalTime(value: 1, timescale: 6_000)
+        )
+        for clip in timelineIndex.clips(
+            in: hitRange,
+            trackID: project.timeline.tracks[index].id
+        ).reversed() where clipRect(clip, trackIndex: index).contains(point) {
             return (clip, index)
         }
         return nil

@@ -39,6 +39,10 @@ private struct TimelineContent: View {
                     Label("timeline.delete", systemImage: "trash")
                 }
                 .disabled(state.selectedClipIDs.isEmpty)
+                Button { state.rippleDeleteSelection() } label: {
+                    Label("timeline.ripple_delete", systemImage: "delete.backward")
+                }
+                .disabled(state.selectedClipIDs.isEmpty)
                 Button { state.zoomOut() } label: {
                     Image(systemName: "minus.magnifyingglass")
                 }

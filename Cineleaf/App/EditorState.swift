@@ -347,6 +347,35 @@ final class EditorState: ObservableObject {
         selectedClipIDs = []
     }
 
+    func rippleDeleteSelection() {
+        guard !selectedClipIDs.isEmpty else { return }
+        let ids = selectedClipIDs
+        performEdit { try $0.rippleDelete(ids) }
+        selectedClipIDs = []
+    }
+
+    func groupSelection() {
+        guard selectedClipIDs.count >= 2 else { return }
+        let ids = selectedClipIDs
+        performEdit { _ = try $0.groupClips(ids) }
+    }
+
+    func ungroupSelection() {
+        guard !selectedClipIDs.isEmpty else { return }
+        let ids = selectedClipIDs
+        performEdit { try $0.ungroupClips(ids) }
+    }
+
+    func linkSelection() {
+        guard selectedClipIDs.count >= 2 else { return }
+        let ids = selectedClipIDs
+        performEdit { _ = try $0.linkClips(ids) }
+    }
+
+    func addMarker() {
+        performEdit { _ = try $0.addMarker(at: playback.currentTime) }
+    }
+
     func duplicateSelection() {
         guard selectedClipIDs.count == 1, let id = selectedClipIDs.first else { return }
         var duplicate: UUID?
@@ -359,6 +388,46 @@ final class EditorState: ObservableObject {
         var detached: UUID?
         performEdit { detached = try $0.detachAudio(from: id) }
         if let detached { selectedClipIDs = [detached] }
+    }
+
+    func setPlaybackRate(_ rate: Double, for clipID: UUID) {
+        performEdit { try $0.setPlaybackRate(clipID, rate: rate, ripple: true) }
+    }
+
+    func setReversed(_ reversed: Bool, for clipID: UUID) {
+        performEdit { try $0.setReversed(reversed, for: clipID) }
+    }
+
+    func addEffect(_ kind: VideoEffectKind, to clipID: UUID) {
+        performEdit { try $0.addEffect(VideoEffect(kind: kind), to: clipID) }
+    }
+
+    func removeEffect(_ effectID: UUID, from clipID: UUID) {
+        performEdit { try $0.removeEffect(effectID, from: clipID) }
+    }
+
+    func setTransition(_ kind: TransitionKind?, edge: TransitionEdge, for clipID: UUID) {
+        performEdit { editor in
+            let clip = editor.project.timeline.tracks.flatMap(\.clips).first { $0.id == clipID }
+            let current = edge == .in ? clip?.transitionIn : clip?.transitionOut
+            let transition = kind.map { ClipTransition(kind: $0, duration: current?.duration ?? RationalTime(value: 1, timescale: 2)) }
+            try editor.setTransition(transition, edge: edge, for: clipID)
+        }
+    }
+
+    func addKeyframe(_ property: KeyframedProperty, for clipID: UUID) {
+        guard let clip = project?.timeline.tracks.flatMap(\.clips).first(where: { $0.id == clipID }) else { return }
+        let localTime = (playback.currentTime - clip.timelineStart).clamped(to: .zero...clip.duration)
+        let value: Double
+        switch property {
+        case .positionX: value = clip.transform.positionX
+        case .positionY: value = clip.transform.positionY
+        case .scale: value = clip.transform.scale
+        case .rotationDegrees: value = clip.transform.rotationDegrees
+        case .opacity: value = clip.opacity
+        case .volume: value = clip.audioVolume
+        }
+        performEdit { try $0.setKeyframe(property, ScalarKeyframe(time: localTime, value: value), for: clipID) }
     }
 
     func generateAutomaticCaptions(for assetID: UUID) async {

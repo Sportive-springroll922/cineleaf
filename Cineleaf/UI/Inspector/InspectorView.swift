@@ -90,8 +90,56 @@ private struct ClipInspector: View {
             if clip.kind == .video {
                 Section("inspector.video") {
                     Toggle("inspector.video_muted", isOn: binding(\.isVideoMuted))
+                    Picker("inspector.speed", selection: playbackRateBinding) {
+                        ForEach([0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4], id: \.self) { rate in
+                            Text(rate.formatted(.number.precision(.fractionLength(0...2))) + "×").tag(rate)
+                        }
+                    }
+                    Toggle("inspector.reverse", isOn: reversedBinding)
                     fadeSlider("inspector.video_fade_in", keyPath: \.fades.videoIn)
                     fadeSlider("inspector.video_fade_out", keyPath: \.fades.videoOut)
+                }
+
+                Section("inspector.color") {
+                    adjustmentSlider("inspector.exposure", keyPath: \.colorAdjustments.exposure, range: -4...4)
+                    adjustmentSlider("inspector.contrast", keyPath: \.colorAdjustments.contrast, range: 0...4)
+                    adjustmentSlider("inspector.saturation", keyPath: \.colorAdjustments.saturation, range: 0...4)
+                    adjustmentSlider("inspector.temperature", keyPath: \.colorAdjustments.temperature, range: -1...1)
+                    adjustmentSlider("inspector.tint", keyPath: \.colorAdjustments.tint, range: -1...1)
+                    adjustmentSlider("inspector.highlights", keyPath: \.colorAdjustments.highlights, range: -1...1)
+                    adjustmentSlider("inspector.shadows", keyPath: \.colorAdjustments.shadows, range: -1...1)
+                    adjustmentSlider("inspector.sharpen", keyPath: \.colorAdjustments.sharpen, range: 0...1)
+                    adjustmentSlider("inspector.vignette", keyPath: \.colorAdjustments.vignette, range: 0...1)
+                    Button("inspector.color_reset") {
+                        state.updateClip(clip.id) { $0.colorAdjustments = .neutral }
+                    }
+                }
+
+                Section("inspector.effects") {
+                    ForEach(state.selectedClip?.effects ?? clip.effects) { effect in
+                        HStack {
+                            Toggle(effect.kind.localizedName, isOn: effectEnabledBinding(effect.id))
+                                .toggleStyle(.switch)
+                            Slider(value: effectAmountBinding(effect.id), in: 0...1)
+                            Button(role: .destructive) {
+                                state.removeEffect(effect.id, from: clip.id)
+                            } label: {
+                                Image(systemName: "minus.circle")
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("inspector.effect_remove")
+                        }
+                    }
+                    Menu("inspector.effect_add") {
+                        ForEach(VideoEffectKind.allCases, id: \.self) { kind in
+                            Button(kind.localizedName) { state.addEffect(kind, to: clip.id) }
+                        }
+                    }
+                }
+
+                Section("inspector.transitions") {
+                    transitionPicker("inspector.transition_in", edge: .in)
+                    transitionPicker("inspector.transition_out", edge: .out)
                 }
             }
 
@@ -105,6 +153,21 @@ private struct ClipInspector: View {
                     if clip.kind == .video {
                         Button("audio.detach") { state.detachAudio() }
                     }
+                }
+            }
+
+            if clip.kind == .video || clip.kind == .audio {
+                Section("inspector.keyframes") {
+                    if clip.kind == .video {
+                        keyframeButton("inspector.keyframe_position", property: .positionX)
+                        keyframeButton("inspector.keyframe_scale", property: .scale)
+                        keyframeButton("inspector.keyframe_rotation", property: .rotationDegrees)
+                        keyframeButton("inspector.keyframe_opacity", property: .opacity)
+                    }
+                    keyframeButton("inspector.keyframe_volume", property: .volume)
+                    Text("inspector.keyframe_hint")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
 
@@ -209,6 +272,20 @@ private struct ClipInspector: View {
         )
     }
 
+    private var playbackRateBinding: Binding<Double> {
+        Binding(
+            get: { state.selectedClip?.playbackRate ?? clip.playbackRate },
+            set: { state.setPlaybackRate($0, for: clip.id) }
+        )
+    }
+
+    private var reversedBinding: Binding<Bool> {
+        Binding(
+            get: { state.selectedClip?.isReversed ?? clip.isReversed },
+            set: { state.setReversed($0, for: clip.id) }
+        )
+    }
+
     private var trackID: UUID? {
         state.project?.timeline.tracks.first(where: { $0.clips.contains { $0.id == clip.id } })?.id
     }
@@ -234,6 +311,125 @@ private struct ClipInspector: View {
                 ),
                 in: 0...max(clip.duration.seconds / 2, 0.001)
             )
+        }
+    }
+
+    @ViewBuilder
+    private func adjustmentSlider(
+        _ key: LocalizedStringKey,
+        keyPath: WritableKeyPath<TimelineClip, Double>,
+        range: ClosedRange<Double>
+    ) -> some View {
+        LabeledContent(key) { Slider(value: binding(keyPath), in: range) }
+    }
+
+    private func effectAmountBinding(_ effectID: UUID) -> Binding<Double> {
+        Binding(
+            get: { (state.selectedClip ?? clip).effects.first(where: { $0.id == effectID })?.amount ?? 0 },
+            set: { amount in
+                state.updateClip(clip.id) { current in
+                    guard let index = current.effects.firstIndex(where: { $0.id == effectID }) else { return }
+                    current.effects[index].amount = amount
+                }
+            }
+        )
+    }
+
+    private func effectEnabledBinding(_ effectID: UUID) -> Binding<Bool> {
+        Binding(
+            get: { (state.selectedClip ?? clip).effects.first(where: { $0.id == effectID })?.isEnabled ?? false },
+            set: { enabled in
+                state.updateClip(clip.id) { current in
+                    guard let index = current.effects.firstIndex(where: { $0.id == effectID }) else { return }
+                    current.effects[index].isEnabled = enabled
+                }
+            }
+        )
+    }
+
+    @ViewBuilder
+    private func transitionPicker(_ key: LocalizedStringKey, edge: TransitionEdge) -> some View {
+        VStack(alignment: .leading) {
+            Picker(key, selection: transitionBinding(edge)) {
+                Text("inspector.transition_none").tag(nil as TransitionKind?)
+                ForEach(TransitionKind.allCases, id: \.self) { kind in
+                    Text(kind.localizedName).tag(Optional(kind))
+                }
+            }
+            if transitionBinding(edge).wrappedValue != nil {
+                LabeledContent("inspector.transition_duration") {
+                    Slider(
+                        value: transitionDurationBinding(edge),
+                        in: 0.05...max(clip.duration.seconds, 0.05)
+                    )
+                }
+            }
+        }
+    }
+
+    private func transitionBinding(_ edge: TransitionEdge) -> Binding<TransitionKind?> {
+        Binding(
+            get: {
+                let current = state.selectedClip ?? clip
+                return edge == .in ? current.transitionIn?.kind : current.transitionOut?.kind
+            },
+            set: { state.setTransition($0, edge: edge, for: clip.id) }
+        )
+    }
+
+    private func transitionDurationBinding(_ edge: TransitionEdge) -> Binding<Double> {
+        Binding(
+            get: {
+                let current = state.selectedClip ?? clip
+                return (edge == .in ? current.transitionIn : current.transitionOut)?.duration.seconds ?? 0.5
+            },
+            set: { duration in
+                state.updateClip(clip.id) { current in
+                    let value = RationalTime(seconds: duration, preferredTimescale: 6_000)
+                    if edge == .in { current.transitionIn?.duration = value }
+                    else { current.transitionOut?.duration = value }
+                }
+            }
+        )
+    }
+
+    @ViewBuilder
+    private func keyframeButton(_ key: LocalizedStringKey, property: KeyframedProperty) -> some View {
+        Button {
+            state.addKeyframe(property, for: clip.id)
+        } label: {
+            HStack {
+                Label(key, systemImage: "diamond")
+                Spacer()
+                Text("\((state.selectedClip ?? clip).keyframes[property].count)")
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
+private extension VideoEffectKind {
+    var localizedName: LocalizedStringKey {
+        switch self {
+        case .gaussianBlur: "effect.blur"
+        case .sharpen: "effect.sharpen"
+        case .vignette: "effect.vignette"
+        case .monochrome: "effect.monochrome"
+        case .sepia: "effect.sepia"
+        case .bloom: "effect.bloom"
+        }
+    }
+}
+
+private extension TransitionKind {
+    var localizedName: LocalizedStringKey {
+        switch self {
+        case .crossDissolve: "transition.cross_dissolve"
+        case .fadeThroughBlack: "transition.fade_black"
+        case .slideLeft: "transition.slide_left"
+        case .slideRight: "transition.slide_right"
+        case .wipeLeft: "transition.wipe_left"
+        case .blur: "transition.blur"
         }
     }
 }
