@@ -129,7 +129,7 @@ final class MediaPipelineIntegrationTests: XCTestCase {
         }
     }
 
-    func testPlaybackRateScalesCompositionWithoutChangingTimelineDuration() async throws {
+    func testPlaybackRateAndReverseRenderWithoutChangingTimelineDuration() async throws {
         let videoURL = temporaryDirectory.appendingPathComponent("speed.mov")
         try await SyntheticMediaFactory.makeVideo(at: videoURL, seconds: 2)
         let asset = MediaAsset(
@@ -152,7 +152,8 @@ final class MediaPipelineIntegrationTests: XCTestCase {
             assetID: asset.id,
             timelineStart: .zero,
             duration: RationalTime(value: 1, timescale: 1),
-            playbackRate: 2
+            playbackRate: 2,
+            isReversed: true
         )]
 
         let access = MediaAccessManager()

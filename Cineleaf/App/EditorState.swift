@@ -576,6 +576,7 @@ final class EditorState: ObservableObject {
         await waveformGenerator.clearCache()
         await inspector.clearCache()
         try await cache.clear()
+        try await MediaDerivativeStore.shared.clear()
     }
 
     func cacheSize() async throws -> Int64 { try await cache.size() }

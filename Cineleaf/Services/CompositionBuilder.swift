@@ -37,6 +37,7 @@ final class RenderedComposition: @unchecked Sendable {
 
 actor AVCompositionBuilder {
     private let accessManager: MediaAccessManager
+    private let reverseMedia = ReverseMediaService()
 
     init(accessManager: MediaAccessManager) {
         self.accessManager = accessManager
@@ -75,13 +76,19 @@ actor AVCompositionBuilder {
                             throw CompositionError.missingAsset(clip.assetID ?? clip.id)
                         }
                         let url = try await accessManager.resolve(media.reference)
-                        let sourceAsset = AVURLAsset(url: url)
+                        let sourceDuration = sourceDuration(for: clip)
+                        let renderURL = clip.isReversed ? try await reverseMedia.video(
+                            url: url,
+                            sourceStart: clip.sourceStart,
+                            sourceDuration: sourceDuration,
+                            frameRate: media.metadata.frameRate ?? project.frameRate.value
+                        ) : url
+                        let sourceAsset = AVURLAsset(url: renderURL)
                         guard let source = try await sourceAsset.loadTracks(withMediaType: .video).first else {
                             throw CompositionError.missingVideoTrack(media.id)
                         }
-                        let sourceDuration = sourceDuration(for: clip)
                         try destination.insertTimeRange(
-                            CMTimeRange(start: clip.sourceStart.cmTime, duration: sourceDuration.cmTime),
+                            CMTimeRange(start: clip.isReversed ? .zero : clip.sourceStart.cmTime, duration: sourceDuration.cmTime),
                             of: source,
                             at: clip.timelineStart.cmTime
                         )
@@ -124,14 +131,19 @@ actor AVCompositionBuilder {
                         throw CompositionError.missingAsset(clip.assetID ?? clip.id)
                     }
                     let url = try await accessManager.resolve(media.reference)
-                    let sourceAsset = AVURLAsset(url: url)
+                    let sourceDuration = sourceDuration(for: clip)
+                    let renderURL = clip.isReversed ? try await reverseMedia.audio(
+                        url: url,
+                        sourceStart: clip.sourceStart,
+                        sourceDuration: sourceDuration
+                    ) : url
+                    let sourceAsset = AVURLAsset(url: renderURL)
                     guard let source = try await sourceAsset.loadTracks(withMediaType: .audio).first else {
                         if clip.kind == .video { continue }
                         throw CompositionError.missingAudioTrack(media.id)
                     }
-                    let sourceDuration = sourceDuration(for: clip)
                     try destination.insertTimeRange(
-                        CMTimeRange(start: clip.sourceStart.cmTime, duration: sourceDuration.cmTime),
+                        CMTimeRange(start: clip.isReversed ? .zero : clip.sourceStart.cmTime, duration: sourceDuration.cmTime),
                         of: source,
                         at: clip.timelineStart.cmTime
                     )
