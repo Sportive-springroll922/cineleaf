@@ -75,7 +75,8 @@ public enum ProjectValidator {
                     }
                     if clip.kind != .image,
                        let sourceDuration = assetsByID[assetID]?.metadata.duration,
-                       clip.sourceStart + scaled(clip.duration, by: clip.playbackRate) > sourceDuration {
+                       clip.sourceStart + (clip.playbackRate == 1 ? clip.duration : scaled(clip.duration, by: clip.playbackRate))
+                        > sourceDuration {
                         throw ProjectValidationError.invalidTime(clip.id)
                     }
                 } else {
@@ -88,45 +89,60 @@ public enum ProjectValidator {
                     throw ProjectValidationError.invalidAudioVolume(clip.id)
                 }
                 let transform = clip.transform
-                guard transform.scale > 0,
-                      [transform.positionX, transform.positionY, transform.scale, transform.rotationDegrees,
-                       transform.cropTop, transform.cropLeading, transform.cropBottom, transform.cropTrailing]
-                        .allSatisfy(\.isFinite),
-                      [transform.cropTop, transform.cropLeading, transform.cropBottom, transform.cropTrailing]
-                        .allSatisfy({ (0...1).contains($0) }) else {
-                    throw ProjectValidationError.invalidTransform(clip.id)
+                if transform != ClipTransform() {
+                    guard transform.scale > 0, transform.positionX.isFinite, transform.positionY.isFinite,
+                          transform.scale.isFinite, transform.rotationDegrees.isFinite, transform.cropTop.isFinite,
+                          transform.cropLeading.isFinite, transform.cropBottom.isFinite, transform.cropTrailing.isFinite,
+                          (0...1).contains(transform.cropTop), (0...1).contains(transform.cropLeading),
+                          (0...1).contains(transform.cropBottom), (0...1).contains(transform.cropTrailing) else {
+                        throw ProjectValidationError.invalidTransform(clip.id)
+                    }
                 }
-                let fades = [clip.fades.videoIn, clip.fades.videoOut, clip.fades.audioIn, clip.fades.audioOut]
-                guard fades.allSatisfy({ $0 >= .zero && $0 <= clip.duration }),
-                      clip.fades.videoIn + clip.fades.videoOut <= clip.duration,
-                      clip.fades.audioIn + clip.fades.audioOut <= clip.duration else {
-                    throw ProjectValidationError.invalidFade(clip.id)
+                if clip.fades != ClipFades() {
+                    guard clip.fades.videoIn >= .zero, clip.fades.videoIn <= clip.duration,
+                          clip.fades.videoOut >= .zero, clip.fades.videoOut <= clip.duration,
+                          clip.fades.audioIn >= .zero, clip.fades.audioIn <= clip.duration,
+                          clip.fades.audioOut >= .zero, clip.fades.audioOut <= clip.duration,
+                          clip.fades.videoIn + clip.fades.videoOut <= clip.duration,
+                          clip.fades.audioIn + clip.fades.audioOut <= clip.duration else {
+                        throw ProjectValidationError.invalidFade(clip.id)
+                    }
                 }
                 let color = clip.colorAdjustments
-                guard [color.exposure, color.contrast, color.saturation, color.temperature, color.tint,
-                       color.highlights, color.shadows, color.sharpen, color.vignette].allSatisfy(\.isFinite),
-                      (-4...4).contains(color.exposure), (0...4).contains(color.contrast),
-                      (0...4).contains(color.saturation), (-1...1).contains(color.temperature),
-                      (-1...1).contains(color.tint), (-1...1).contains(color.highlights),
-                      (-1...1).contains(color.shadows), (0...1).contains(color.sharpen),
-                      (0...1).contains(color.vignette) else {
-                    throw ProjectValidationError.invalidColorAdjustments(clip.id)
-                }
-                var effectIDs = Set<UUID>()
-                for effect in clip.effects {
-                    guard effectIDs.insert(effect.id).inserted else {
-                        throw ProjectValidationError.duplicateIdentifier(effect.id)
-                    }
-                    guard effect.amount.isFinite, (0...1).contains(effect.amount) else {
-                        throw ProjectValidationError.invalidEffect(clip.id)
+                if color != .neutral {
+                    guard color.exposure.isFinite, color.contrast.isFinite, color.saturation.isFinite,
+                          color.temperature.isFinite, color.tint.isFinite, color.highlights.isFinite,
+                          color.shadows.isFinite, color.sharpen.isFinite, color.vignette.isFinite,
+                          (-4...4).contains(color.exposure), (0...4).contains(color.contrast),
+                          (0...4).contains(color.saturation), (-1...1).contains(color.temperature),
+                          (-1...1).contains(color.tint), (-1...1).contains(color.highlights),
+                          (-1...1).contains(color.shadows), (0...1).contains(color.sharpen),
+                          (0...1).contains(color.vignette) else {
+                        throw ProjectValidationError.invalidColorAdjustments(clip.id)
                     }
                 }
-                for transition in [clip.transitionIn, clip.transitionOut].compactMap({ $0 }) {
+                if !clip.effects.isEmpty {
+                    var effectIDs = Set<UUID>(minimumCapacity: clip.effects.count)
+                    for effect in clip.effects {
+                        guard effectIDs.insert(effect.id).inserted else {
+                            throw ProjectValidationError.duplicateIdentifier(effect.id)
+                        }
+                        guard effect.amount.isFinite, (0...1).contains(effect.amount) else {
+                            throw ProjectValidationError.invalidEffect(clip.id)
+                        }
+                    }
+                }
+                if let transition = clip.transitionIn {
                     guard transition.duration > .zero, transition.duration <= clip.duration else {
                         throw ProjectValidationError.invalidTransition(clip.id)
                     }
                 }
-                guard validKeyframes(clip.keyframes, duration: clip.duration) else {
+                if let transition = clip.transitionOut {
+                    guard transition.duration > .zero, transition.duration <= clip.duration else {
+                        throw ProjectValidationError.invalidTransition(clip.id)
+                    }
+                }
+                guard clip.keyframes.isEmpty || validKeyframes(clip.keyframes, duration: clip.duration) else {
                     throw ProjectValidationError.invalidKeyframe(clip.id)
                 }
                 switch clip.role {

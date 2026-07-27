@@ -144,6 +144,11 @@ public struct ClipKeyframes: Codable, Hashable, Sendable {
             }
         }
     }
+
+    public var isEmpty: Bool {
+        positionX.isEmpty && positionY.isEmpty && scale.isEmpty && rotationDegrees.isEmpty
+            && opacity.isEmpty && volume.isEmpty
+    }
 }
 
 public struct TimelineMarker: Identifiable, Codable, Hashable, Sendable {

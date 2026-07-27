@@ -19,6 +19,7 @@
 		3EB2905542AA15A597B07749 /* ExportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA4571433D30C1612B72D422 /* ExportService.swift */; };
 		5BDCDB182BEFD2E7309141D3 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90E5F945155330A5594823CC /* RootView.swift */; };
 		5FC74D5E0D963E8F6836EEF7 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4491D35BE631F9AAD4FB75DE /* SidebarView.swift */; };
+		624C6F0B186F6D54BF96136A /* ProxyMediaService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C15A1FABEBFA779BA79BB966 /* ProxyMediaService.swift */; };
 		6400706D8AE5AEE7A49CDCEF /* PlaybackController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0B017BB71881CE86A941CAC /* PlaybackController.swift */; };
 		6B4A1B93CC74CA3CEE756D44 /* MediaAccessManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D51019943A8ECF8F9DE61895 /* MediaAccessManager.swift */; };
 		7286A5445B9CB619268142DC /* EditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C350A3AD02712417778EB547 /* EditorView.swift */; };
@@ -30,11 +31,15 @@
 		8FB77F93CC893A8C69390A5E /* ThumbnailGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D43CDA79BB99EC2BEBAAFBA /* ThumbnailGenerator.swift */; };
 		913603F2B736E43C0C5748A8 /* CineleafUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80BC905387D6AFB987A1BD64 /* CineleafUITests.swift */; };
 		99FCA5422587C0D6B58E8E39 /* CineleafCore in Frameworks */ = {isa = PBXBuildFile; productRef = 22A4DD30C91F381D387C287D /* CineleafCore */; };
+		A3071A550A2F162F4ECC069E /* VoiceoverRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCD3FDBFFC34CFD6A44190F6 /* VoiceoverRecorder.swift */; };
+		A11111111111111111111111 /* SilenceDetectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11111111111111111111111 /* SilenceDetectionService.swift */; };
+		A22222222222222222222222 /* SilenceRemovalSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B22222222222222222222222 /* SilenceRemovalSheet.swift */; };
 		AA846166F2DF49FAAD86D2C3 /* MediaPipelineIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20157B24935D3C4E7E547AE6 /* MediaPipelineIntegrationTests.swift */; };
 		B4A8CFFAE625E2075D4203B5 /* SyntheticMediaFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B58DF59AF4A1BCAFB4757FE /* SyntheticMediaFactory.swift */; };
 		B5B0B24037DFFFEB4D573341 /* PreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFCABE675ABDCBC43D891BB6 /* PreviewView.swift */; };
 		BB8D96813E54A746544B98CB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 18DF9F351D8530EA8E085F2B /* Assets.xcassets */; };
 		C39186A3772364FD2F7262B9 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 9B0D3C7E3BFE7AB9EDF1A10E /* InfoPlist.strings */; };
+		C4766ACC4E8C9456854C83F2 /* CineleafVideoCompositor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20B0321D41C71D50C3973203 /* CineleafVideoCompositor.swift */; };
 		C77AC9AB99DAD1DB7FC88293 /* CoreMediaBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF03BF16F6115D7745C6D87B /* CoreMediaBridge.swift */; };
 		CF573D4F7CA0406F91E6784A /* LocalDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A16CB15B41658C0104E51FA /* LocalDiagnostics.swift */; };
 		D121BEC6A71111386F4AC3BD /* EditorState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5317BEC7F8D69A58EEDFEC8A /* EditorState.swift */; };
@@ -44,8 +49,12 @@
 		E425E34917EDAA6D6BB56DEB /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FE9D6CDB482D5FE6D5AFA2B /* TimelineView.swift */; };
 		E5BF90D8218FE0DA33947E5D /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABB6D312930CBF68364F4969 /* AboutView.swift */; };
 		E79C1745357611B319C2BFE4 /* ProjectSettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94BF54EA2216DE77E31D06A5 /* ProjectSettingsSheet.swift */; };
+		EFEF21A018B2E94F05827F06 /* MediaDerivativeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5159F1C66E5282168CC9240A /* MediaDerivativeStore.swift */; };
 		F2533876B53C325BE45B3250 /* TimelineScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70DFC6CBD7DCF06D82E58E8C /* TimelineScrollView.swift */; };
+		F290E6957D2C5700E9ECC313 /* OnDeviceTranscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51EB0D756B100B84BE778E8A /* OnDeviceTranscriptionService.swift */; };
+		F5C1E022362B024E58F2134E /* AudioAnalysisService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE2D95FCA39E335365A8F785 /* AudioAnalysisService.swift */; };
 		F63FDFB626BFEDDABAFD9484 /* ErrorAndRecoverySheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6A03D38757F9C1EBE8FAEEC /* ErrorAndRecoverySheets.swift */; };
+		FCC202396A14E5FE967E364E /* ReverseMediaService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87FBAA9C41242F614DEDF9D0 /* ReverseMediaService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -70,11 +79,14 @@
 		18DF9F351D8530EA8E085F2B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		1AB7027182D0A2F936F3409D /* WaveformGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaveformGenerator.swift; sourceTree = "<group>"; };
 		20157B24935D3C4E7E547AE6 /* MediaPipelineIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaPipelineIntegrationTests.swift; sourceTree = "<group>"; };
+		20B0321D41C71D50C3973203 /* CineleafVideoCompositor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CineleafVideoCompositor.swift; sourceTree = "<group>"; };
 		2FE9D6CDB482D5FE6D5AFA2B /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineView.swift; sourceTree = "<group>"; };
 		3A16CB15B41658C0104E51FA /* LocalDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalDiagnostics.swift; sourceTree = "<group>"; };
 		418E614E6997FD8207C13DEB /* InspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspectorView.swift; sourceTree = "<group>"; };
 		4491D35BE631F9AAD4FB75DE /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
 		4D43CDA79BB99EC2BEBAAFBA /* ThumbnailGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailGenerator.swift; sourceTree = "<group>"; };
+		5159F1C66E5282168CC9240A /* MediaDerivativeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaDerivativeStore.swift; sourceTree = "<group>"; };
+		51EB0D756B100B84BE778E8A /* OnDeviceTranscriptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnDeviceTranscriptionService.swift; sourceTree = "<group>"; };
 		5317BEC7F8D69A58EEDFEC8A /* EditorState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorState.swift; sourceTree = "<group>"; };
 		55EB7D83C5A0CA9AB3AB5DC6 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		5736B4DB416CE28DABB90F47 /* CineleafTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CineleafTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -88,6 +100,7 @@
 		7AACBEBF48B352D4A0EF72F2 /* ExportSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportSheet.swift; sourceTree = "<group>"; };
 		80BC905387D6AFB987A1BD64 /* CineleafUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CineleafUITests.swift; sourceTree = "<group>"; };
 		85DD0E403AF99FE0C91AF653 /* CineleafApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CineleafApp.swift; sourceTree = "<group>"; };
+		87FBAA9C41242F614DEDF9D0 /* ReverseMediaService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReverseMediaService.swift; sourceTree = "<group>"; };
 		90E5F945155330A5594823CC /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		911349E0976297AAF0788458 /* CineleafCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = CineleafCore; path = Packages/CineleafCore; sourceTree = SOURCE_ROOT; };
 		94BF54EA2216DE77E31D06A5 /* ProjectSettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSettingsSheet.swift; sourceTree = "<group>"; };
@@ -97,14 +110,19 @@
 		BE5900671D7665C9DDFD5834 /* BoundedCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoundedCache.swift; sourceTree = "<group>"; };
 		BFCABE675ABDCBC43D891BB6 /* PreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewView.swift; sourceTree = "<group>"; };
 		C0B017BB71881CE86A941CAC /* PlaybackController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackController.swift; sourceTree = "<group>"; };
+		C15A1FABEBFA779BA79BB966 /* ProxyMediaService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProxyMediaService.swift; sourceTree = "<group>"; };
 		C350A3AD02712417778EB547 /* EditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorView.swift; sourceTree = "<group>"; };
 		C6A03D38757F9C1EBE8FAEEC /* ErrorAndRecoverySheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorAndRecoverySheets.swift; sourceTree = "<group>"; };
+		CCD3FDBFFC34CFD6A44190F6 /* VoiceoverRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceoverRecorder.swift; sourceTree = "<group>"; };
 		D51019943A8ECF8F9DE61895 /* MediaAccessManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaAccessManager.swift; sourceTree = "<group>"; };
 		DA4571433D30C1612B72D422 /* ExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportService.swift; sourceTree = "<group>"; };
 		DE4570AD8CF75B05EA4335C5 /* CineleafUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CineleafUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		DFA3FDA7F6D2FA2C6764B65A /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		E26F0D66BD5659F856F21C0A /* CineleafCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CineleafCommands.swift; sourceTree = "<group>"; };
 		ED6C6B1FA18C7C81C403BEF1 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		EE2D95FCA39E335365A8F785 /* AudioAnalysisService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioAnalysisService.swift; sourceTree = "<group>"; };
+		B11111111111111111111111 /* SilenceDetectionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SilenceDetectionService.swift; sourceTree = "<group>"; };
+		B22222222222222222222222 /* SilenceRemovalSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SilenceRemovalSheet.swift; sourceTree = "<group>"; };
 		EF03BF16F6115D7745C6D87B /* CoreMediaBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreMediaBridge.swift; sourceTree = "<group>"; };
 		F69E9C813E45FF702EB343C5 /* MediaInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaInspector.swift; sourceTree = "<group>"; };
 		FA216CE816DB41593E360499 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
@@ -249,6 +267,7 @@
 				94BF54EA2216DE77E31D06A5 /* ProjectSettingsSheet.swift */,
 				90E5F945155330A5594823CC /* RootView.swift */,
 				4491D35BE631F9AAD4FB75DE /* SidebarView.swift */,
+				B22222222222222222222222 /* SilenceRemovalSheet.swift */,
 				DFA3FDA7F6D2FA2C6764B65A /* WelcomeView.swift */,
 				6707C0F11B7ECDCE3F7BF6E4 /* Components */,
 				0F8B369F19F624EDDC711C08 /* Inspector */,
@@ -261,15 +280,23 @@
 		CD2522D83CAB0EE8FA20D07B /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				EE2D95FCA39E335365A8F785 /* AudioAnalysisService.swift */,
 				BE5900671D7665C9DDFD5834 /* BoundedCache.swift */,
+				20B0321D41C71D50C3973203 /* CineleafVideoCompositor.swift */,
 				5DD066459CF69C1BD26843F3 /* CompositionBuilder.swift */,
 				EF03BF16F6115D7745C6D87B /* CoreMediaBridge.swift */,
 				DA4571433D30C1612B72D422 /* ExportService.swift */,
 				3A16CB15B41658C0104E51FA /* LocalDiagnostics.swift */,
 				D51019943A8ECF8F9DE61895 /* MediaAccessManager.swift */,
+				5159F1C66E5282168CC9240A /* MediaDerivativeStore.swift */,
 				F69E9C813E45FF702EB343C5 /* MediaInspector.swift */,
+				51EB0D756B100B84BE778E8A /* OnDeviceTranscriptionService.swift */,
 				C0B017BB71881CE86A941CAC /* PlaybackController.swift */,
+				C15A1FABEBFA779BA79BB966 /* ProxyMediaService.swift */,
+				87FBAA9C41242F614DEDF9D0 /* ReverseMediaService.swift */,
+				B11111111111111111111111 /* SilenceDetectionService.swift */,
 				4D43CDA79BB99EC2BEBAAFBA /* ThumbnailGenerator.swift */,
+				CCD3FDBFFC34CFD6A44190F6 /* VoiceoverRecorder.swift */,
 				1AB7027182D0A2F936F3409D /* WaveformGenerator.swift */,
 			);
 			path = Services;
@@ -421,9 +448,11 @@
 			files = (
 				E5BF90D8218FE0DA33947E5D /* AboutView.swift in Sources */,
 				334CBEC71A5784C2CBE384EF /* AppLanguage.swift in Sources */,
+				F5C1E022362B024E58F2134E /* AudioAnalysisService.swift in Sources */,
 				1652A23953D1005EC853DB44 /* BoundedCache.swift in Sources */,
 				82CC3A20C450396B0DF0FFC0 /* CineleafApp.swift in Sources */,
 				DF1D55EB057E1DFEBB354166 /* CineleafCommands.swift in Sources */,
+				C4766ACC4E8C9456854C83F2 /* CineleafVideoCompositor.swift in Sources */,
 				7F01ACA21D5A352CDE8B2F83 /* CompositionBuilder.swift in Sources */,
 				C77AC9AB99DAD1DB7FC88293 /* CoreMediaBridge.swift in Sources */,
 				DBAF7BC775A1663201C7983B /* DurationText.swift in Sources */,
@@ -435,18 +464,25 @@
 				3B9EC237F2C60F2C4DFF60E3 /* InspectorView.swift in Sources */,
 				CF573D4F7CA0406F91E6784A /* LocalDiagnostics.swift in Sources */,
 				6B4A1B93CC74CA3CEE756D44 /* MediaAccessManager.swift in Sources */,
+				EFEF21A018B2E94F05827F06 /* MediaDerivativeStore.swift in Sources */,
 				2E2ADB3D6B3BFF4625AD49BD /* MediaInspector.swift in Sources */,
 				0301442CDB17037ABA4F3CC7 /* NewProjectSheet.swift in Sources */,
+				F290E6957D2C5700E9ECC313 /* OnDeviceTranscriptionService.swift in Sources */,
 				6400706D8AE5AEE7A49CDCEF /* PlaybackController.swift in Sources */,
 				B5B0B24037DFFFEB4D573341 /* PreviewView.swift in Sources */,
 				E79C1745357611B319C2BFE4 /* ProjectSettingsSheet.swift in Sources */,
+				624C6F0B186F6D54BF96136A /* ProxyMediaService.swift in Sources */,
 				D20FF521F11C2319E4F19EB9 /* RecentProjectsStore.swift in Sources */,
+				FCC202396A14E5FE967E364E /* ReverseMediaService.swift in Sources */,
 				5BDCDB182BEFD2E7309141D3 /* RootView.swift in Sources */,
 				7FED192D5B204725D49A97AB /* SettingsView.swift in Sources */,
 				5FC74D5E0D963E8F6836EEF7 /* SidebarView.swift in Sources */,
+				A11111111111111111111111 /* SilenceDetectionService.swift in Sources */,
+				A22222222222222222222222 /* SilenceRemovalSheet.swift in Sources */,
 				8FB77F93CC893A8C69390A5E /* ThumbnailGenerator.swift in Sources */,
 				F2533876B53C325BE45B3250 /* TimelineScrollView.swift in Sources */,
 				E425E34917EDAA6D6BB56DEB /* TimelineView.swift in Sources */,
+				A3071A550A2F162F4ECC069E /* VoiceoverRecorder.swift in Sources */,
 				17124B447C9B18B75FA834B9 /* WaveformGenerator.swift in Sources */,
 				1AC1D2FB6794ED1541C9ACAC /* WelcomeView.swift in Sources */,
 			);
