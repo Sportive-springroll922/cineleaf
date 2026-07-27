@@ -1,0 +1,68 @@
+name: Cineleaf
+options:
+  bundleIdPrefix: org.cineleaf
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+packages:
+  CineleafCore:
+    path: Packages/CineleafCore
+settings:
+  base:
+    SWIFT_VERSION: "5.10"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    CLANG_ENABLE_MODULES: YES
+    ENABLE_HARDENED_RUNTIME: YES
+    GCC_WARN_INHIBIT_ALL_WARNINGS: NO
+    SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
+targets:
+  Cineleaf:
+    type: application
+    platform: macOS
+    sources:
+      - path: Cineleaf
+        excludes:
+          - Info.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.cineleaf.Cineleaf
+        PRODUCT_NAME: Cineleaf
+        MARKETING_VERSION: 0.1.0
+        CURRENT_PROJECT_VERSION: 1
+        INFOPLIST_FILE: Cineleaf/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        CODE_SIGN_ENTITLEMENTS: Cineleaf/Cineleaf.entitlements
+        GENERATE_INFOPLIST_FILE: NO
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks"
+    dependencies:
+      - package: CineleafCore
+    scheme:
+      testTargets:
+        - CineleafTests
+        - CineleafUITests
+      gatherCoverageData: true
+  CineleafTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: CineleafTests
+    dependencies:
+      - target: Cineleaf
+      - package: CineleafCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.cineleaf.CineleafTests
+        GENERATE_INFOPLIST_FILE: YES
+  CineleafUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources:
+      - path: CineleafUITests
+    dependencies:
+      - target: Cineleaf
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.cineleaf.CineleafUITests
+        GENERATE_INFOPLIST_FILE: YES
