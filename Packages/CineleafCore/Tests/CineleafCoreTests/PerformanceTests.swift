@@ -24,7 +24,11 @@ final class PerformanceTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(project.timeline.duration, RationalTime(value: 3_600, timescale: 1))
 
         measure {
-            XCTAssertNoThrow(try ProjectValidator.validate(project))
+            do {
+                try ProjectValidator.validate(project)
+            } catch {
+                XCTFail("Validation failed: \(error)")
+            }
         }
     }
 
@@ -34,7 +38,11 @@ final class PerformanceTests: XCTestCase {
             TestFixtures.asset(id: UUID(), kind: .video, duration: RationalTime(value: 60, timescale: 1))
         }
         measure {
-            XCTAssertNoThrow(try ProjectCodec().encode(project))
+            do {
+                _ = try ProjectCodec().encode(project)
+            } catch {
+                XCTFail("Encoding failed: \(error)")
+            }
         }
     }
 }
