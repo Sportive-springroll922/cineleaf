@@ -150,6 +150,17 @@ private struct ClipInspector: View {
                     }
                     fadeSlider("inspector.audio_fade_in", keyPath: \.fades.audioIn)
                     fadeSlider("inspector.audio_fade_out", keyPath: \.fades.audioOut)
+                    Button {
+                        Task { await state.normalizeAudio(for: clip.id) }
+                    } label: {
+                        if state.isNormalizingAudio {
+                            ProgressView().controlSize(.small)
+                            Text("audio.normalizing")
+                        } else {
+                            Label("audio.normalize", systemImage: "waveform.badge.plus")
+                        }
+                    }
+                    .disabled(state.isNormalizingAudio)
                     if clip.kind == .video {
                         Button("audio.detach") { state.detachAudio() }
                     }

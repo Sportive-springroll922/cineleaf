@@ -55,6 +55,11 @@ struct SidebarView: View {
                     .draggable(asset.id.uuidString)
                     .contextMenu {
                         Button("timeline.add_selected") { state.addAssetToTimeline(asset.id) }
+                        if asset.kind == .video {
+                            Button(asset.proxyReference == nil ? "proxy.generate" : "proxy.regenerate") {
+                                Task { await state.generateProxy(for: asset.id) }
+                            }
+                        }
                         if case .missing = state.mediaAvailability[asset.id] {
                             Button("media.relink") { relink(asset) }
                         }
@@ -225,6 +230,14 @@ private struct MediaAssetRow: View {
                     Label("media.missing", systemImage: "exclamationmark.triangle.fill")
                         .font(.caption)
                         .foregroundStyle(.orange)
+                }
+                if let progress = state.proxyProgress[asset.id] {
+                    ProgressView(value: progress)
+                        .accessibilityLabel("proxy.generating")
+                } else if asset.proxyReference != nil {
+                    Label("proxy.ready", systemImage: "bolt.fill")
+                        .font(.caption)
+                        .foregroundStyle(.green)
                 }
             }
         }

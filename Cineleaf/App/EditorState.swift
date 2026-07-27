@@ -22,8 +22,11 @@ final class EditorState: ObservableObject {
     @Published private(set) var isImporting = false
     @Published private(set) var isBuildingPreview = false
     @Published private(set) var isGeneratingCaptions = false
+    @Published private(set) var isNormalizingAudio = false
+    @Published private(set) var isRecordingVoiceover = false
     @Published private(set) var waveforms: [UUID: [Float]] = [:]
     @Published private(set) var mediaAvailability: [UUID: MediaAvailability] = [:]
+    @Published private(set) var proxyProgress: [UUID: Double] = [:]
     @Published var presentedError: PresentedError?
     @Published var availableRecovery: CineleafProject?
     @Published var isNewProjectSheetPresented = false
@@ -43,7 +46,11 @@ final class EditorState: ObservableObject {
     private let waveformGenerator = AVWaveformGenerator()
     private lazy var compositionBuilder = AVCompositionBuilder(accessManager: accessManager)
     private let exportService = AVExportService()
+    private let proxyService = ProxyMediaService()
     private let transcriptionService = OnDeviceTranscriptionService()
+    private let audioAnalysis = AudioAnalysisService()
+    private let voiceoverRecorder = VoiceoverRecorder()
+    private var voiceoverStart = RationalTime.zero
     private var autosaveTask: Task<Void, Never>?
     private var previewTask: Task<Void, Never>?
     private var waveformTasks: [UUID: Task<Void, Never>] = [:]
@@ -68,6 +75,7 @@ final class EditorState: ObservableObject {
         autosaveTask?.cancel()
         previewTask?.cancel()
         waveformTasks.values.forEach { $0.cancel() }
+        voiceoverRecorder.cancel()
     }
 
     var canUndo: Bool { history.canUndo }
@@ -153,6 +161,8 @@ final class EditorState: ObservableObject {
         waveformTasks.values.forEach { $0.cancel() }
         waveformTasks.removeAll()
         playback.stop()
+        voiceoverRecorder.cancel()
+        isRecordingVoiceover = false
         renderedComposition = nil
         await accessManager.releaseAll()
         project = nil
@@ -430,6 +440,87 @@ final class EditorState: ObservableObject {
         performEdit { try $0.setKeyframe(property, ScalarKeyframe(time: localTime, value: value), for: clipID) }
     }
 
+    func normalizeAudio(for clipID: UUID) async {
+        guard let project,
+              let clip = project.timeline.tracks.flatMap(\.clips).first(where: { $0.id == clipID }),
+              let assetID = clip.assetID,
+              let asset = project.assets.first(where: { $0.id == assetID }) else { return }
+        isNormalizingAudio = true
+        defer { isNormalizingAudio = false }
+        do {
+            let url = try await accessManager.resolve(asset.reference)
+            let sourceDuration = RationalTime(
+                seconds: clip.duration.seconds * clip.playbackRate,
+                preferredTimescale: 60_000
+            )
+            let result = try await audioAnalysis.normalization(
+                url: url,
+                sourceStart: clip.sourceStart,
+                sourceDuration: sourceDuration
+            )
+            updateClip(clipID) { $0.audioVolume = result.linearGain }
+        } catch {
+            present(error, messageKey: "error.audio.normalize")
+        }
+    }
+
+    func toggleVoiceoverRecording() async {
+        if isRecordingVoiceover {
+            await finishVoiceover()
+            return
+        }
+        guard project != nil else { return }
+        if playback.isPlaying { playback.togglePlayback() }
+        voiceoverStart = playback.currentTime
+        do {
+            try await voiceoverRecorder.start()
+            isRecordingVoiceover = true
+        } catch {
+            present(error, messageKey: "error.voiceover.start")
+        }
+    }
+
+    private func finishVoiceover() async {
+        do {
+            let url = try voiceoverRecorder.stop()
+            isRecordingVoiceover = false
+            let inspection = try await inspector.inspect(url: url)
+            guard let duration = inspection.metadata.duration, duration > .zero else {
+                throw VoiceoverError.cannotRecord
+            }
+            let asset = MediaAsset(
+                displayName: String(localized: "voiceover.name"),
+                kind: .audio,
+                reference: MediaReference(
+                    lastKnownPath: url.path,
+                    sourceModificationDate: try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
+                ),
+                metadata: inspection.metadata
+            )
+            var clipID: UUID?
+            performEdit { editor in
+                try editor.addAsset(asset)
+                let voiceoverNumber = editor.project.timeline.tracks.filter { $0.kind == .audio }.count + 1
+                let trackID = try editor.addTrack(name: "VO\(voiceoverNumber)", kind: .audio)
+                let clip = TimelineClip(
+                    name: asset.displayName,
+                    kind: .audio,
+                    assetID: asset.id,
+                    timelineStart: voiceoverStart,
+                    duration: duration,
+                    role: .voiceover
+                )
+                try editor.insert(clip, into: trackID)
+                clipID = clip.id
+            }
+            scheduleWaveform(for: asset)
+            if let clipID { selectedClipIDs = [clipID] }
+        } catch {
+            isRecordingVoiceover = false
+            present(error, messageKey: "error.voiceover.finish")
+        }
+    }
+
     func generateAutomaticCaptions(for assetID: UUID) async {
         guard let project, let asset = project.assets.first(where: { $0.id == assetID }), asset.metadata.hasAudio else {
             present(TranscriptionError.noSpeechDetected, messageKey: "error.captions.no_audio")
@@ -543,10 +634,9 @@ final class EditorState: ObservableObject {
     }
 
     func prepareExport() async -> RenderedComposition? {
-        if let renderedComposition, renderedComposition.revision == project?.modifiedAt { return renderedComposition }
         guard let project else { return nil }
         do {
-            let rendered = try await compositionBuilder.build(project: project)
+            let rendered = try await compositionBuilder.build(project: project, purpose: .export)
             renderedComposition = rendered
             return rendered
         } catch {
@@ -577,6 +667,24 @@ final class EditorState: ObservableObject {
         await inspector.clearCache()
         try await cache.clear()
         try await MediaDerivativeStore.shared.clear()
+    }
+
+    func generateProxy(for assetID: UUID) async {
+        guard let asset = project?.assets.first(where: { $0.id == assetID }), asset.kind == .video else { return }
+        proxyProgress[assetID] = 0
+        do {
+            let sourceURL = try await accessManager.resolve(asset.reference)
+            let proxyURL = try await proxyService.generate(url: sourceURL) { [weak self] value in
+                Task { @MainActor in self?.proxyProgress[assetID] = value }
+            }
+            var updated = asset
+            updated.proxyReference = MediaReference(lastKnownPath: proxyURL.path)
+            performEdit { try $0.replaceAsset(updated) }
+            proxyProgress.removeValue(forKey: assetID)
+        } catch {
+            proxyProgress.removeValue(forKey: assetID)
+            present(error, messageKey: "error.proxy.generate")
+        }
     }
 
     func cacheSize() async throws -> Int64 { try await cache.size() }

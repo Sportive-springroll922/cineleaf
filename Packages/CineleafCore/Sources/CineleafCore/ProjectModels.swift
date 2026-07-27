@@ -95,19 +95,22 @@ public struct MediaAsset: Identifiable, Codable, Hashable, Sendable {
     public var kind: MediaKind
     public var reference: MediaReference
     public var metadata: MediaMetadata
+    public var proxyReference: MediaReference?
 
     public init(
         id: UUID = UUID(),
         displayName: String,
         kind: MediaKind,
         reference: MediaReference,
-        metadata: MediaMetadata
+        metadata: MediaMetadata,
+        proxyReference: MediaReference? = nil
     ) {
         self.id = id
         self.displayName = displayName
         self.kind = kind
         self.reference = reference
         self.metadata = metadata
+        self.proxyReference = proxyReference
     }
 }
 

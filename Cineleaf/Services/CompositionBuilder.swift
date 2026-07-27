@@ -36,6 +36,10 @@ final class RenderedComposition: @unchecked Sendable {
 }
 
 actor AVCompositionBuilder {
+    enum Purpose: Sendable, Equatable {
+        case preview
+        case export
+    }
     private let accessManager: MediaAccessManager
     private let reverseMedia = ReverseMediaService()
 
@@ -43,15 +47,15 @@ actor AVCompositionBuilder {
         self.accessManager = accessManager
     }
 
-    func build(project: CineleafProject) async throws -> RenderedComposition {
+    func build(project: CineleafProject, purpose: Purpose = .preview) async throws -> RenderedComposition {
         try ProjectValidator.validate(project)
         guard project.timeline.duration > .zero else { throw CompositionError.emptyTimeline }
         return try await LocalDiagnostics.shared.measure("composition_rebuild") {
-            try await self.buildComposition(project: project)
+            try await self.buildComposition(project: project, purpose: purpose)
         }
     }
 
-    private func buildComposition(project: CineleafProject) async throws -> RenderedComposition {
+    private func buildComposition(project: CineleafProject, purpose: Purpose) async throws -> RenderedComposition {
         let composition = AVMutableComposition()
         let assets = Dictionary(uniqueKeysWithValues: project.assets.map { ($0.id, $0) })
         var layerInstructions: [AVMutableVideoCompositionLayerInstruction] = []
@@ -75,7 +79,7 @@ actor AVCompositionBuilder {
                         guard let assetID = clip.assetID, let media = assets[assetID] else {
                             throw CompositionError.missingAsset(clip.assetID ?? clip.id)
                         }
-                        let url = try await accessManager.resolve(media.reference)
+                        let url = try await mediaURL(media, purpose: purpose)
                         let sourceDuration = sourceDuration(for: clip)
                         let renderURL = clip.isReversed ? try await reverseMedia.video(
                             url: url,
@@ -130,7 +134,8 @@ actor AVCompositionBuilder {
                     guard let assetID = clip.assetID, let media = assets[assetID] else {
                         throw CompositionError.missingAsset(clip.assetID ?? clip.id)
                     }
-                    let url = try await accessManager.resolve(media.reference)
+                    if clip.kind == .video && !media.metadata.hasAudio { continue }
+                    let url = try await mediaURL(media, purpose: purpose)
                     let sourceDuration = sourceDuration(for: clip)
                     let renderURL = clip.isReversed ? try await reverseMedia.audio(
                         url: url,
@@ -204,6 +209,14 @@ actor AVCompositionBuilder {
 
     private func sourceDuration(for clip: TimelineClip) -> RationalTime {
         RationalTime(seconds: clip.duration.seconds * clip.playbackRate, preferredTimescale: 60_000)
+    }
+
+    private func mediaURL(_ media: MediaAsset, purpose: Purpose) async throws -> URL {
+        if purpose == .preview, let proxy = media.proxyReference,
+           let url = try? await accessManager.resolve(proxy) {
+            return url
+        }
+        return try await accessManager.resolve(media.reference)
     }
 
     private func requiresCustomCompositor(_ project: CineleafProject) -> Bool {

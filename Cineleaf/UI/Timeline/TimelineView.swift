@@ -31,6 +31,15 @@ private struct TimelineContent: View {
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
                 Spacer()
+                Button {
+                    Task { await state.toggleVoiceoverRecording() }
+                } label: {
+                    Label(
+                        state.isRecordingVoiceover ? "voiceover.stop" : "voiceover.record",
+                        systemImage: state.isRecordingVoiceover ? "stop.circle.fill" : "mic.circle"
+                    )
+                }
+                .tint(state.isRecordingVoiceover ? .red : nil)
                 Button { state.splitSelection() } label: {
                     Label("timeline.split", systemImage: "scissors")
                 }

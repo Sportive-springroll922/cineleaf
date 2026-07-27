@@ -201,4 +201,19 @@ final class MediaPipelineIntegrationTests: XCTestCase {
         XCTAssertEqual(frame.height, project.canvas.height)
         await access.releaseAll()
     }
+
+    func testAudioNormalizationMeasuresAndCapsGain() async throws {
+        let audioURL = temporaryDirectory.appendingPathComponent("normalize.caf")
+        try SyntheticMediaFactory.makeAudio(at: audioURL)
+
+        let result = try await AudioAnalysisService().normalization(
+            url: audioURL,
+            sourceStart: .zero,
+            sourceDuration: RationalTime(value: 1, timescale: 1)
+        )
+
+        XCTAssertLessThan(result.rmsDecibels, 0)
+        XCTAssertLessThanOrEqual(result.linearGain, 2)
+        XCTAssertGreaterThan(result.linearGain, 0)
+    }
 }
